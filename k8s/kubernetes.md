@@ -335,7 +335,7 @@ Là 1 cách tổ chức và phân tách các tài nguyên trong 1 cụm k8s đ�
     vi ns.yaml
 
     apiVersion: v1
-    kind Namespace
+    kind: Namespace
     metadata:
         name: project-1
 
@@ -350,7 +350,7 @@ Là 1 cách tổ chức và phân tách các tài nguyên trong 1 cụm k8s đ�
 - Cấu hình giới hạn tài nguyên cho namespace sử dụng: `vi resourcequota.yaml`
     ```
     apiVersion: v1
-    kind: Resource
+    kind: ResourceQuota
     metadata: 
         name: mem-cpu-quota
         namespace: project-1
