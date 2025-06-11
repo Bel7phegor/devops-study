@@ -57,16 +57,22 @@ Mục lục
     - [3.14.2. Cách tạo và sử dụng ConfigMap](#3142-cách-tạo-và-sử-dụng-configmap)
     - [3.14.3. Lưu ý](#3143-lưu-ý)
   - [3.15. Secret](#315-secret)
+    - [3.15.1. Các loại secret phổ biến](#3151-các-loại-secret-phổ-biến)
+    - [3.15.2. Cách sử dụng](#3152-cách-sử-dụng)
+  - [3.16. Request và limit](#316-request-và-limit)
+    - [3.16.1. Mục đích:](#3161-mục-đích)
+    - [3.16.2. Khác biệt](#3162-khác-biệt)
+    - [3.16.3. Các loại tài nguyên chính](#3163-các-loại-tài-nguyên-chính)
 - [4. Xây dựng công cụ dự án](#4-xây-dựng-công-cụ-dự-án)
 - [5. Giám sát và quản trị Kubernetes](#5-giám-sát-và-quản-trị-kubernetes)
 - [6. Triển khai k8s trên k3s](#6-triển-khai-k8s-trên-k3s)
-  - [Bước 1: Gỡ cài đặt Kubernetes (kubeadm, kubelet, kubectl)](#bước-1-gỡ-cài-đặt-kubernetes-kubeadm-kubelet-kubectl)
-  - [Bước 2: (Tuỳ chọn) Gỡ containerd (nếu muốn dùng k3s tự cài containerd riêng)](#bước-2-tuỳ-chọn-gỡ-containerd-nếu-muốn-dùng-k3s-tự-cài-containerd-riêng)
-  - [Bước 3: Tắt swap (bạn đã làm rồi), vẫn giữ nguyên.](#bước-3-tắt-swap-bạn-đã-làm-rồi-vẫn-giữ-nguyên)
-  - [Bước 4: Cài đặt K3s](#bước-4-cài-đặt-k3s)
-    - [Cấu hình sysctl](#cấu-hình-sysctl)
-    - [Cài đặt k3s trên node đầu tiên (192.168.1.111)](#cài-đặt-k3s-trên-node-đầu-tiên-1921681111)
-    - [Cài đặt k3s trên node thứ hai (192.168.1.112)](#cài-đặt-k3s-trên-node-thứ-hai-1921681112)
+  - [6.1. Bước 1: Gỡ cài đặt Kubernetes (kubeadm, kubelet, kubectl)](#61-bước-1-gỡ-cài-đặt-kubernetes-kubeadm-kubelet-kubectl)
+  - [6.2. Bước 2: (Tuỳ chọn) Gỡ containerd (nếu muốn dùng k3s tự cài containerd riêng)](#62-bước-2-tuỳ-chọn-gỡ-containerd-nếu-muốn-dùng-k3s-tự-cài-containerd-riêng)
+  - [6.3. Bước 3: Tắt swap (bạn đã làm rồi), vẫn giữ nguyên.](#63-bước-3-tắt-swap-bạn-đã-làm-rồi-vẫn-giữ-nguyên)
+  - [6.4. Bước 4: Cài đặt K3s](#64-bước-4-cài-đặt-k3s)
+    - [6.4.1. Cấu hình sysctl](#641-cấu-hình-sysctl)
+    - [6.4.2. Cài đặt k3s trên node đầu tiên (192.168.1.111)](#642-cài-đặt-k3s-trên-node-đầu-tiên-1921681111)
+    - [6.4.3. Cài đặt k3s trên node thứ hai (192.168.1.112)](#643-cài-đặt-k3s-trên-node-thứ-hai-1921681112)
 
 # 1. Khởi đầu
 ## 1.1. Kubernetes là gì? (K8S) {c}
@@ -148,68 +154,79 @@ Search:"How many way are there to install kubernetes"
             ```
 
         - Cập nhật và nâng cấp hệ thống
-                
-                sudo apt update -y && sudo apt upgrade -y
+            ```
+            sudo apt update -y && sudo apt upgrade -y
+            ```
         - Tạo user devops và chuyển sang user devops
-
-                adduser devops
-                usermod -aG sudo devops
-                su devops
-                cd /home/devops
+            ```
+            adduser devops
+            usermod -aG sudo devops
+            su devops
+            cd /home/devops
+            ```
         - Tắt swapoff: 
-            <br> Tạm thời
-                
-                sudo swapoff -a
-            <br> Vĩnh viễn
-
-                vi /etc/fstab 
-                #/swap.img
-                hoặc 
-                sudo sed -i '/swap.img/s/^/#/' /etc/fstab
+          -  Tạm thời: `sudo swapoff -a`
+          - Vĩnh viễn
+            ```
+            vi /etc/fstab 
+            #/swap.img
+            hoặc 
+            sudo sed -i '/swap.img/s/^/#/' /etc/fstab
+            ```
         - Cấu hình module kernel: `vi /etc/modules-load.d/containerd.conf`
-
-                sudo tee /etc/modules-load.d/containerd.conf <<EOF
-                overlay
-                br_netfilter
-                EOF
+            ```
+            sudo tee /etc/modules-load.d/containerd.conf <<EOF
+            overlay
+            br_netfilter
+            EOF
+            ```
         - Tải module kernel
-
-                sudo modprobe overlay
-                sudo modprobe br_netfilter
+            ```
+            sudo modprobe overlay
+            sudo modprobe br_netfilter
+            ```
         - Cấu hình hệ thống mạng:
-            > sudo tee /etc/sysctl.d/kubernetes.conf <<EOF
+            ```
+            sudo tee /etc/sysctl.d/kubernetes.conf <<EOF
             net.bridge.bridge-nf-call-ip6tables = 1
             net.bridge.bridge-nf-call-iptables = 1
             net.ipv4.ip_forward = 1
             EOF
-
+            ```
             Áp dụng cấu hình sysctl
             > sudo sysctl --system
         - Cài đặt các gói cần thiết và thêm kho Docker
-            > sudo apt install -y curl gnupg2 software-properties-common apt-transport-https ca-certificates
+            ```
+            sudo apt install -y curl gnupg2 software-properties-common apt-transport-https ca-certificates
             sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/docker.gpg
             sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-            
+            ```
         - Cài đặt containerd 
-            > sudo apt update -y
+            ```
+            sudo apt update -y
             sudo apt install -y containerd.io
+            ```
         - Cấu hình containerd        
-
-            > containerd config default | sudo tee /etc/containerd/config.toml >/dev/null 2>&1
+            ```
+            containerd config default | sudo tee /etc/containerd/config.toml >/dev/null 2>&1
             sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
-
+            ```
             - Khởi động containerd
-                > sudo systemctl restart containerd
+                ```
+                sudo systemctl restart containerd
                 sudo systemctl enable containerd
+                ```
         - Thêm kho lưu trữ Kubernetes
-
-            > echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+            ```
+            echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
             curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+            ```
         - Cài đặt các gói Kubernetes
-
-                sudo apt update -y
-                sudo apt install -y kubelet kubeadm kubectl
-                sudo apt-mark hold kubelet kubeadm kubectl
+            ```
+            sudo apt update -y
+            sudo apt install -y kubelet kubeadm kubectl
+            sudo apt-mark hold kubelet kubeadm kubectl
+            ```
 - Cài đặt k8s cluster 1 master 2 worker
     - Thực hiện trên server k8s-master-1
         ```
@@ -780,7 +797,7 @@ Name: car-serv1-service
 `
 - selectors: `Key: app; Value: car-serv-deployment`
 ## 3.10. Helm 
-> **Helm là trình quản lý package cho k8s dùng chart để deploy ứng dụng phức tạp - tương tự như apt trong ubuntu hay yum trong CentOS, nhưng dành cho ứng dụng chạy trong k8s Giúp tái sử dụng YAML, cấu hình linh hoạt qua biến**
+**Helm là trình quản lý package cho k8s dùng chart để deploy ứng dụng phức tạp - tương tự như apt trong ubuntu hay yum trong CentOS, nhưng dành cho ứng dụng chạy trong k8s Giúp tái sử dụng YAML, cấu hình linh hoạt qua biến**
 
 ### 3.10.1. Mục đích của Helm
 | Tính năng                 | Mô tả                                                           |
@@ -1184,12 +1201,104 @@ ConfigMap là một đối tượng API trong Kubernetes cho phép lưu trữ d�
 - Giới hạn kích thước: Dữ liệu trong ConfigMap không nên vượt quá 1 MiB. Nếu cần lưu trữ cấu hình lớn hơn, hãy xem xét sử dụng volume hoặc dịch vụ lưu trữ bên ngoài. 
 - Cập nhật ConfigMap: Khi ConfigMap được cập nhật, các container sử dụng nó thông qua volume sẽ tự động nhận được thay đổi. Tuy nhiên, đối với các biến môi trường, cần phải khởi động lại Pod để áp dụng cấu hình mới. 
 ## 3.15. Secret
+- Là đối tượng k8s dùng để lưu trữ dữ liệu nhạy cảm như: mật khẩu, token, ssh-key, chứng chỉ tls
+- Thay vì lưu trực tiếp vào cấu hình pod, giúp bảo vệ thông tin nhạy cảm và quản lý dễ hơn.
+- Mã hóa bằng base64 để đảm bảo dữ liệu được truyền qua không bị lỗi định dạng
+### 3.15.1. Các loại secret phổ biến 
 
+| Built-in Type	| Usage |
+|---|---|
+| Opaque	| arbitrary user-defined data (lưu trữ dưới dạng key-value) base64 | 
+| kubernetes.io/service-account-token	| ServiceAccount token (Xác thực account) | 
+| kubernetes.io/dockercfg	| serialized ~/.dockercfg file (Lưu trữ những thông tin đăng nhập của docker registry như username, password, token )| 
+| kubernetes.io/dockerconfigjson	| serialized ~/.docker/config.json file (Lưu trữ những thông tin đăng nhập của docker registry như username, password, token) dưới dạng json | 
+| kubernetes.io/basic-auth	| credentials for basic authentication (Chứa 2 loại giá trị) |
+| kubernetes.io/ssh-auth	| credentials for SSH authentication | 
+| kubernetes.io/tls	| data for a TLS client or server (Lưu trữ chứng chỉ) |
+| bootstrap.kubernetes.io/token |	bootstrap token data (Lưu trữ token bootstrap được sử dụng khi muốn thêm 1 k8s cluster) |
 
+### 3.15.2. Cách sử dụng 
+- Opaque
+    ```
+    apiVersion: v1
+    kind: Secret
+    metadata: 
+        name: ecommerce-backend-database-connection
+        namespace:
+    type: Opaque
+    * Có 2 cách sử dụng ở đây 
+    Cách 1: là nhập data và cái key phải được mã hóa trước với base64 
+    Cách 2: là sử dụng stringData ghi giá trị chính xác, khi k8s sử lý sẽ chuyển sang dạng mã hóa 
+    stringData:
+        MARIADN_HOST: "192.168.1.115"
+        MARIADB_DB: "full-stack-ecommerce"
+        MARIADB_PORT: '3306'
+        MARIADB_USERNAME: "ecommerceapp"
+        MARIADB_PASSWORD: "StrongPa55WorD"
+    ```
+- Sau đó cần phải mount secret vào deployment như mapconfig (Sửa bằng file yaml hoặc giao diện rancher)
+- Sửa trên giao diện (edit ) -> Enviroment Variables -> Secret -> file -> Save 
+- Excuse vào trong container và kiểm tra xem các giá trị đã được truyền vào hay chưa 
+- Vào lại configmap chỉnh sửa lại các thông số 
+    ```
+    HOST, PORT, DB
+    USERNAME, PASSWORD
+    Sau đó redepoy lại
+    ```
+
+* Nếu sử dụng Docker private Registry (Harbor)
+
+- Step 0. Đảm bảo đã cài đặt Harbor như trong link hướng dẫn.
+- Step 1. Cấu hình xác thực
+Tạo secret chứa thông tin xác thực Harbor (Thực hiện trên server k8s-master-1 hoặc kubectl shell rancher)
+    ```
+    # kubectl create secret docker-registry auth-registry --docker-email=yourmail@gmail.com --docker-username=username-harbor --docker-password=password-harbor --docker-server=domain-harbor.com --namespace ecommerce
+    ```
+- Step 2: Thêm secret vào Deployment
+    ```
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+        name: your-deployment
+        namespace: your-namespace
+    spec:
+        replicas: 1
+        selector:
+            matchLabels:
+            app: your-app
+        template:
+            metadata:
+                labels:
+                    app: your-app
+            spec:
+                containers:
+                - name: your-container
+                    image: harbor-domain.com/devopseduvn/ecommerce-backend:v1
+                imagePullSecrets:
+                - name: auth-registry # thêm tên secret như thế này
+    ```
+## 3.16. Request và limit 
+Request: yêu cầu tài nguyên đại diện cho tài nguyên tối thiểu mà container cần để chạy ổn định, Số tài nguyên mà k8s dành riêng để đảm bảo container luôn luôn có thể chạy
+Limit: lượng tài nguyên tối đa mà k8s được phép sử dụng 
+### 3.16.1. Mục đích:
+Đảm bảo container có đủ tài nguyên để hoạt động.
+Tránh việc container chiếm dụng quá nhiều tài nguyên, ảnh hưởng đến các container khác.
+### 3.16.2. Khác biệt
+
+![alt text](image-16.png)
+### 3.16.3. Các loại tài nguyên chính
+- CPU:
+    - Được đo bằng đơn vị cores (nhân CPU).
+    - Có thể sử dụng giá trị thập phân (ví dụ: 0.5 = 500m – millicores).
+    - Kubernetes sử dụng CPU shares (cơ chế Cgroups) để phân bổ CPU.
+- Bộ nhớ (Memory):
+    - Được đo bằng bytes (có thể dùng đơn vị Mi, Gi, Ki).
+    - Ví dụ: 256Mi = 256 mebibytes, 1Gi = 1 gibibyte.
+    - Kubernetes dùng cgroup để giới hạn bộ nhớ.
 # 4. Xây dựng công cụ dự án 
 # 5. Giám sát và quản trị Kubernetes 
 # 6. Triển khai k8s trên k3s 
-## Bước 1: Gỡ cài đặt Kubernetes (kubeadm, kubelet, kubectl)
+## 6.1. Bước 1: Gỡ cài đặt Kubernetes (kubeadm, kubelet, kubectl)
 Chạy lệnh sau trên tất cả các node đã cài:
 
 ```
@@ -1208,16 +1317,16 @@ sudo rm -rf /etc/kubernetes/
 sudo rm -rf /var/lib/etcd
 sudo rm -rf /var/lib/kubelet
 ```
-## Bước 2: (Tuỳ chọn) Gỡ containerd (nếu muốn dùng k3s tự cài containerd riêng)
+## 6.2. Bước 2: (Tuỳ chọn) Gỡ containerd (nếu muốn dùng k3s tự cài containerd riêng)
 ```
 sudo systemctl stop containerd
 sudo systemctl disable containerd
 sudo apt purge -y containerd.io
 sudo rm -rf /etc/containerd /var/lib/containerd
 ```
-## Bước 3: Tắt swap (bạn đã làm rồi), vẫn giữ nguyên.
-## Bước 4: Cài đặt K3s
-### Cấu hình sysctl
+## 6.3. Bước 3: Tắt swap (bạn đã làm rồi), vẫn giữ nguyên.
+## 6.4. Bước 4: Cài đặt K3s
+### 6.4.1. Cấu hình sysctl
 ```
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -1225,7 +1334,7 @@ net.bridge.bridge-nf-call-iptables = 1
 EOF
 sudo sysctl --system
 ```
-### Cài đặt k3s trên node đầu tiên (192.168.1.111)
+### 6.4.2. Cài đặt k3s trên node đầu tiên (192.168.1.111)
 ```
 curl -sfL https://get.k3s.io | sh -s - server \
   --cluster-init \
@@ -1244,7 +1353,7 @@ Sau khi cài đặt xong, lấy token để join node thứ 2:
 ```
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
-### Cài đặt k3s trên node thứ hai (192.168.1.112)
+### 6.4.3. Cài đặt k3s trên node thứ hai (192.168.1.112)
 ```
 curl -sfL https://get.k3s.io | sh -s - server \
   --server https://192.168.1.111:6443 \
