@@ -1,0 +1,8 @@
+[control_plane]
+control1 ansible_ssh_host=10.32.3.180
+[workers]
+worker1 ansible_ssh_host=10.32.3.181
+worker2 ansible_ssh_host=10.32.3.182
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

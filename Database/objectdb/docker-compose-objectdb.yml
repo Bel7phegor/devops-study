@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  objectdb:
+    build: .
+    container_name: objectdb
+    ports:
+      - "6136:6136"
+    volumes:
+      - /data/objectdb/:/opt/objectdb/db
+    restart: always

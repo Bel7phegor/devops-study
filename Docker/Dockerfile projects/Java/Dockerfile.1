@@ -1,0 +1,17 @@
+FROM maven:3.8.3-openjdk-17 as build
+
+WORKDIR ./src
+COPY . .
+
+RUN mvn clean install -DskipTests=true
+
+FROM openjdk:17
+
+RUN unlink /etc/localtime;ln -s  /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
+
+COPY --from=build src/target/<project_name>.jar <project_name>.jar
+EXPOSE <port>
+
+ENV JAVA_OPTIONS="-Xmx2048m -Xms256m"
+
+CMD ["java","-jar","-Xmx2048m","-Xms256m","<project_name>.jar"]

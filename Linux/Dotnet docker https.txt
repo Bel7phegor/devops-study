@@ -1,0 +1,7 @@
+- Trong project dự án chạy lệnh
+$ dotnet dev-certs https -ep %USERPROFILE%\.aspnet\https\dockerdemo.pfx -p Passw0rd@123
+$ dotnet dev-certs https --trust
+$ docker build or docker-compose => build image
+$ docker run --rm -it -p 8000:80 -p 8001:443 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTPS_PORT=8001 -e ASPNETCORE_Kestrel__Certificates__Default__Password="Passw0rd@123" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/dockerdemo.pfx -v <Path project>\.aspnet\https:/https/ <images_name>
+
+	ex: $ docker run --rm -it -dp 8000:80 -dp 8001:443 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTPS_PORT=8001 -e ASPNETCORE_Kestrel__Certificates__Default__Password="Passw0rd@123" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/dockerdemo.pfx -v D:\SSO\%USERPROFILE%\.aspnet\https:/https/ sso-image

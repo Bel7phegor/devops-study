@@ -1,0 +1,15 @@
+---
+# tasks file for roles/quick-deploy
+
+- name: Clone source
+  command: git clone http://username:password@ip:3080/project.git
+  args:
+    chdir: /home
+
+- name: Run project
+  command: docker-compose up -d
+  args:
+    chdir: /home/project
+
+- name: clear
+  command: rm -r /home/project

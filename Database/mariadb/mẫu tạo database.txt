@@ -1,0 +1,11 @@
+ # Development
+CREATE DATABASE `projects`;
+
+CREATE USER 'projects'@'%' IDENTIFIED BY 'ctDSf9zxvQ7IjpSt';
+
+GRANT USAGE ON `projects`.* TO 'projects'@'%';
+GRANT CREATE, SELECT, INSERT, UPDATE, DELETE, CREATE, DROP ON `projects`.* TO 'projects'@'%';
+GRANT ALTER ON `projects`.* TO 'projects'@'%';
+ALTER DATABASE `projects` CHARACTER SET='utf8mb4' COLLATE='utf8mb4_unicode_ci';
+GRANT PROCESS ON *.* TO 'projects'@'%'; # thay đổi quyền chỉ process
+FLUSH PRIVILEGES;

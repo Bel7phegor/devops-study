@@ -46,7 +46,7 @@ Mục lục
       - [3.11.1.1. Thành phần chính của Ingress:](#31111-thành-phần-chính-của-ingress)
       - [3.11.1.2. Cài đặt và cấu hình Nginx Ingress Controller](#31112-cài-đặt-và-cấu-hình-nginx-ingress-controller)
       - [3.11.1.3. Triển khai loadbalancer](#31113-triển-khai-loadbalancer)
-    - [3.11.2. Op Cloud](#3112-op-cloud)
+    - [3.11.2. On Cloud](#3112-on-cloud)
   - [3.12. Template yaml](#312-template-yaml)
   - [3.13. Triển khai dự án Fullstack](#313-triển-khai-dự-án-fullstack)
     - [3.13.1. Mô hình dự án](#3131-mô-hình-dự-án)
@@ -83,15 +83,15 @@ Là nền tảng mã nguồn mở để tự động triển khai, scaling, mở
 
 ## 1.2. Mô hình triển khai
 - Mô hình triển khai
-    ![alt text](image-6.png)
+    ![alt text](Images/image-6.png)
 ## 1.3. Khi nào nên sử dụng k8s 
 - Cần phải đảm bảo 4 yếu tố để áp dụng giải pháp nào đó: Hiệu quả, vận hành, minh bạch, khả năng vận hành, tối ưu chi phí
 
-    ![alt text](image-10.png)
+    ![alt text](Images/image-10.png)
 ## 1.4. Hạ tầng k8s
 ### 1.4.1. Kiến trúc k8s 
 
-![alt text](image-11.png)
+![alt text](Images/image-11.png)
 
 ### 1.4.2. Lấy ví dụ về mô hình
 - Trong 1 công ty thì có: 
@@ -126,14 +126,14 @@ Search:"How many way are there to install kubernetes"
 - Có 2 cách chính: thủ công(Kubeadm) và tự động (kyops)
 ### 2.1.1. Cài đặt trên On-premise
 - Mô hình K8s cluster
-    ![Mô hình cluster](image.png)
+    ![Mô hình cluster](Images/image.png)
     - Server nào đóng vai trò là control plane thì mặc định nó không thể triển khai dự án lên đó
     - Việc điều hành có thể bị ảnh hưởng, gây ra cao tải và ảnh hướng đến server 
     - Một mô hình với 3 control plane và worker 
         - Có thể triển khai dự án trên cả 3 server 
         - Khá phổ biến 
         
-        ![alt text](image-1.png)
+        ![alt text](Images/image-1.png)
 - Tạo các servers k8s
     - Tạo 3 server ubuntu 
 
@@ -304,7 +304,7 @@ Search:"How many way are there to install kubernetes"
 ## 3.1. Quy trình kiến khai dự án k8s
 - Ví dụ quy trình:
 
-    ![Quy trình](image-2.png)
+    ![Quy trình](Images/image-2.png)
 
 - Hướng nghiên cứu từ node -> services -> Ingress (Ingress controller) -> traffic và hướng đi thì ngược lại
 ### 3.1.1. Yaml trong k8s
@@ -318,17 +318,17 @@ Search:"How many way are there to install kubernetes"
     - apiVersion: v1, apps/v1, batch/v1
     - kind: thuộc tính để khai báo các tài nguyên
 
-        ![alt text](image-3.png)
+        ![alt text](Images/image-3.png)
     - metadata: chứa các thông tin liên quan đến tài nguyên (tên, nhãn, namespace)
     - spec: Định nghĩa chi tiết cấu hình của tài nguyên
 
-        ![alt text](image-4.png)
+        ![alt text](Images/image-4.png)
 ### 3.1.2. Namespace k8s
 ```
 Là 1 cách tổ chức và phân tách các tài nguyên trong 1 cụm k8s để quản lý tốt hơn. Nó được sử dụng để chia nhỏ tài nguyên của 1 cụm lớn thành các không gian làm việc logic nhỏ hơn, giúp dễ dàng quản lý và vận hành hơn.
 ```
 
-![alt text](image-5.png)
+![alt text](Images/image-5.png)
 
     Giúp quản lý và phân chia tài nguyên 1 cách rõ ràng hơn khi có nhiều nhóm làm vc trên 1 cụm dựa trên CPU, ram, phân tách các môi trường giúp quản lý tập trung và tối ưu chi phí, tài nguyên này, ai được cấu hình trên nó
 
@@ -379,7 +379,7 @@ Là 1 cách tổ chức và phân tách các tài nguyên trong 1 cụm k8s đ�
     kubectl apply -f resourcequota.yaml
     ```
 ## 3.2. Tư duy triển khai dự á trên Kubernetes
-- ![alt text](image-8.png)
+- ![alt text](Images/image-8.png)
 
 ## 3.3. Các công cụ quản lý k8s 
 - Có 3 loại chính: command, desktop, website đều có ưu, nhược điểm riêng
@@ -452,7 +452,7 @@ Là 1 cách tổ chức và phân tách các tài nguyên trong 1 cụm k8s đ�
 - Nối cụm k8s trên rancher để quản lý 
     - Chọn Import Exitsting có 2 lựa chọn chính: (chọn generic)
 
-        ![alt text](image-9.png)
+        ![alt text](Images/image-9.png)
 
     - Cluster Name: learnmyselfvn là cụm k8s dựng nên, nhằm mục đích gì, ghi cụ thể và tường minh 
     - Copy dòng tự ký và sau khi tải về lấy được 1 file yaml và apply file yaml đó và tài nguyên đã được tạo.
@@ -507,7 +507,7 @@ Là 1 cách tổ chức và phân tách các tài nguyên trong 1 cụm k8s đ�
     - Thiếu khả năng tích hợp các công cụ quản lý cáo hơn: Các công cụ CI/CD, auto-scaling, monitoring,... thường làm việc với các đối tượng như Deployment chứ không phải Pod độc lập.
 
 <div style="display: flex; justify-content: center; align-items: center;">
-<img src="image-12.png" alt="Hình ảnh"/>
+<img src="Images/image-12.png" alt="Hình ảnh"/>
 </div>
 
 ### 3.5.1. Triển khai ví dụ một pod 
@@ -607,7 +607,7 @@ vi pod.yaml
     
 - Với mô hình ở dưới: 
     <div style="display: flex; justify-content: center; align-items: center;">
-        <img src="image-13.png" alt="Hình ảnh">
+        <img src="Images/image-13.png" alt="Hình ảnh">
     </div> <br>
 
     ```
@@ -635,7 +635,7 @@ vi pod.yaml
 - Pause, Resume: Giúp kiểm soát được phiên bản trước khi triển khai các pod
 ## 3.8. Các chiến lược deployment k8s
 - Có 2 chiến lược triển khai chính Rolling update và Recreate<br>
-    ![alt text](image-14.png)
+    ![alt text](Images/image-14.png)
     </br>
     ```
     Rolling Update: Cập nhật lần lượt các pod 
@@ -951,7 +951,7 @@ Khi chạy: `helm install myapp ./mychart`
                     pathType: Prefix
     ```
 - Add host trên win 192.168.1.110 car-serv-onpre.devopsedu.vn
-### 3.11.2. Op Cloud
+### 3.11.2. On Cloud
 - Xóa các resource đã khởi tạo 
 `kubectl delete -f car-serv.yaml`
 - Cài đặt helm, cài ingress nginx 
@@ -1034,7 +1034,7 @@ Khi chạy: `helm install myapp ./mychart`
 - Ở các phần trên ta đã triển khai owr Op-premit: deployment, services, Ingress -> download các file cấu hình này về sau đó tối ưu file tất cả phần nào là cấu hình mặc định như annoitaion, timestamp hay managerFied thì sẽ xóa bỏ 
 ## 3.13. Triển khai dự án Fullstack
 ### 3.13.1. Mô hình dự án 
-![alt text](image-15.png)
+![alt text](Images/image-15.png)
 ```
 Database: Mariadb 
 Backend: java string boot api
@@ -1285,7 +1285,7 @@ Limit: lượng tài nguyên tối đa mà k8s được phép sử dụng
 Tránh việc container chiếm dụng quá nhiều tài nguyên, ảnh hưởng đến các container khác.
 ### 3.16.2. Khác biệt
 
-![alt text](image-16.png)
+![alt text](Images/image-16.png)
 ### 3.16.3. Các loại tài nguyên chính
 - CPU:
     - Được đo bằng đơn vị cores (nhân CPU).
@@ -1295,6 +1295,7 @@ Tránh việc container chiếm dụng quá nhiều tài nguyên, ảnh hưởng
     - Được đo bằng bytes (có thể dùng đơn vị Mi, Gi, Ki).
     - Ví dụ: 256Mi = 256 mebibytes, 1Gi = 1 gibibyte.
     - Kubernetes dùng cgroup để giới hạn bộ nhớ.
+
 # 4. Xây dựng công cụ dự án 
 # 5. Giám sát và quản trị Kubernetes 
 # 6. Triển khai k8s trên k3s 
@@ -1322,7 +1323,7 @@ sudo rm -rf /var/lib/kubelet
 sudo systemctl stop containerd
 sudo systemctl disable containerd
 sudo apt purge -y containerd.io
-sudo rm -rf /etc/containerd /var/lib/containerd
+sudo rm -rf /etc/containerd /var/lib/containerd 
 ```
 ## 6.3. Bước 3: Tắt swap (bạn đã làm rồi), vẫn giữ nguyên.
 ## 6.4. Bước 4: Cài đặt K3s

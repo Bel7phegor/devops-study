@@ -1,0 +1,10 @@
+* Create item with info
+    - Name: Service Tomcat Port 8080 Unreachable
+    - key: net.tcp.listen[8080]
+    - Update interval: 10s
+    - New application: Port check
+
+* Create trigger with info
+    - Name: Service Tomcat Port 8080 Unreachable
+    - Severity: High
+    - Expression: {CentOS7-192.168.154.131:net.tcp.listen[8080].last()}=0

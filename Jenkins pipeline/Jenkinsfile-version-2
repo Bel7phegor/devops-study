@@ -1,0 +1,109 @@
+pipeline {
+    agent any
+    environment {
+        PATH_PROJECT = '/home/projects/<project>'
+        SONAR_PROJECT_KEY = '<key>'
+        SONAR_TOKEN = credentials('token-<project>')
+
+        MIGRATION_NAME = sh (script: 'echo $(date +%Y%m%d%H%M%S)', returnStdout: true).trim()
+        
+        DOCKER_HUB = 'elroydevops'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        NAME_BACKEND = '<project>-backend'
+        NAME_FRONTEND = '<project>-frontend'
+        DOCKER_TAG="${GIT_BRANCH.tokenize('/').pop()}-${GIT_COMMIT.substring(0,7)}"
+    }
+    stages {
+        stage('Checkout source') {
+            steps {
+                sh "sudo cp -r . $PATH_PROJECT"
+            }
+        }
+
+        stage('Test backend with dotnet') {
+            steps {
+                sh "cd $PATH_PROJECT/BE \
+                && docker build -t dotnet6-app -f Dockerfile.dotnet6 . \
+                && docker run --rm -v .:/app -w /app dotnet6-app dotnet test"
+                }
+        } 
+
+        stage('Test with sonarqube') {
+            steps {
+                withSonarQubeEnv('Sonarqube server connection') {
+                    sh "cd $PATH_PROJECT/BE \
+                    && docker run --rm -e SONAR_HOST_URL=${env.SONAR_HOST_URL} \
+                    -e SONAR_SCANNER_OPTS='-Dsonar.projectKey=$SONAR_PROJECT_KEY' \
+                    -e SONAR_TOKEN=$SONAR_TOKEN \
+                    -v '.:/usr/src' \
+                    sonarsource/sonar-scanner-cli"
+                }
+            }
+        } 
+
+        stage('Migration database') {
+            steps {
+                script {
+                    try {
+                        timeout(time: 5, unit: 'MINUTES') {
+                            env.userChoice = input message: 'Do you want to migrate the database?',
+                                parameters: [choice(name: 'Versioning Service', choices: 'no\nyes', description: 'Choose "yes" if you want to migrate!')]
+                        }
+                        if (env.userChoice == 'yes') {
+                            echo "Migration success!"
+                            // sh "cd $PATH_PROJECT/BE \
+                            // && docker run --rm -v .:/app -w /app dotnet6-app dotnet ef migrations add $MIGRATION_NAME \
+                            // && docker run --rm -v .:/app -w /app dotnet6-app dotnet ef database update"
+                        } else {
+                            echo "Migration cancelled."
+                        }
+                    } catch (Exception err){
+                        def user = err.getCauses()[0].getUser()
+                        if ('SYSTEM' == user.toString()) {
+                            def didTimeout = true
+                            echo "Timeout. Migration cancelled."
+                        } else {
+                            echo "Migration cancelled by: ${user}"
+                        }
+                    }
+                }
+            }
+        }
+        stage('Build and push images') {
+            steps {
+                script {
+                    env.IMAGE_TAG = DOCKER_TAG
+                    sh " cd $PATH_PROJECT \
+                    && IMAGE_TAG=${env.IMAGE_TAG} \
+                    && docker-compose build --parallel \
+                    && docker tag ${NAME_BACKEND}:$DOCKER_TAG ${DOCKER_HUB}/${NAME_BACKEND}:$DOCKER_TAG \
+                    && docker tag ${NAME_FRONTEND}:$DOCKER_TAG ${DOCKER_HUB}/${NAME_FRONTEND}:$DOCKER_TAG \
+                    && echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin \
+                    && docker push ${DOCKER_HUB}/${NAME_BACKEND}:$DOCKER_TAG \
+                    && docker push ${DOCKER_HUB}/${NAME_FRONTEND}:$DOCKER_TAG \
+                    && docker rmi ${DOCKER_HUB}/${NAME_BACKEND}:$DOCKER_TAG \
+                    && docker rmi ${DOCKER_HUB}/${NAME_FRONTEND}:$DOCKER_TAG"
+                }
+            }
+        }
+        stage('Deploy to Staging')
+        {
+            steps {
+                script {
+                    def deploying = "#!/bin/bash\n" +
+                        "docker rm -f ${NAME_BACKEND} ${NAME_FRONTEND}\n" +
+                        "docker pull ${DOCKER_HUB}/${NAME_BACKEND}:$DOCKER_TAG\n" +
+                        "docker pull ${DOCKER_HUB}/${NAME_FRONTEND}:$DOCKER_TAG\n" +
+                        "docker run --name=${NAME_BACKEND} -dp 8081:80 ${DOCKER_HUB}/${NAME_BACKEND}:$DOCKER_TAG\n" +
+                        "docker run --name=${NAME_FRONTEND} -dp 80:80 ${DOCKER_HUB}/${NAME_FRONTEND}:$DOCKER_TAG"
+
+                    sshagent(credentials: ['jenkins-ssh-key']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -i jenkins-ssh-key root@10.32.3.172 "echo \\\"${deploying}\\\" > deploy.sh && chmod +x deploy.sh && ./deploy.sh"
+                        """                  
+                    }
+                }
+            }
+        }
+    }
+}

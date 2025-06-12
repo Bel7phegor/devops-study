@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  oracle:
+    image: oracleinanutshell/oracle-xe-11g
+    container_name: oracle
+    environment:
+      - DB_SID=ORCLCDB
+      - DB_PDB=ORCLPDB1
+      - DB_DOMAIN=localdomain
+      - ORACLE_PWD=95a3FqXFsUDhxRd
+    ports:
+      - "1521:1521"
+    volumes:
+      - /data/oracle:/opt/oracle/oradata
+    shm_size: '1gb'
+    restart: always

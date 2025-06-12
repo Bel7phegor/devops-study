@@ -799,7 +799,7 @@ elroydevops.tech
 		- cd /etc/nginx
 		- vi conf.d/jenkins.server.tech.conf 
 
-			![alt text](image-2.png)	
+			![alt text](Images/image-2.png)	
 		
 		- systemctl restart nginx
 	- bỏ port 80 được rồi 
@@ -808,7 +808,7 @@ elroydevops.tech
 		- file cấu hình nằm trong /var/lib/jenkins
 		- Và cũng có 1 user jenkin tương ứng 
 
-		![alt text](image-3.png)
+		![alt text](Images/image-3.png)
 	
 	- Plugins
 		- Sẽ chứa những plugins và thêm plugins ở đây

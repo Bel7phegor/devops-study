@@ -1,0 +1,10 @@
+FROM openjdk:8-jre-slim
+
+RUN mkdir -p /opt/objectdb
+COPY objectdb.jar /opt/objectdb/objectdb.jar
+COPY objectdb.conf /opt/objectdb/objectdb.conf
+
+WORKDIR /opt/objectdb
+EXPOSE 6136
+
+ENTRYPOINT ["java", "-cp", "objectdb.jar", "com.objectdb.Server", "-conf", "objectdb.conf"]

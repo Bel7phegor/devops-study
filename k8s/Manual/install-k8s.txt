@@ -1,0 +1,50 @@
+$ apt-cache show docker.io |grep Version
+
+$ apt -y install docker.io=20.10.21-0ubuntu1~22.04.3
+
+$ apt-mark hold docker.io
+
+$ systemctl enable docker.service --now
+
+$ swapoff -a
+
+$ sed -i '/swap/ s/^\(.*\)$/#\1/g' /etc/fstab
+
+$ reboot
+
+$ apt install -y apt-transport-https
+
+$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add
+
+$ cat << EOF >/etc/apt/sources.list.d/kubernetes.list
+deb http://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+
+$ apt update -y
+
+$ apt-cache show kubelet kubeadm kubectl | grep "Package\|Version"
+
+$ apt install -y kubelet=1.20.8-00 kubeadm=1.20.8-00 kubectl=1.20.8-00
+
+$ apt-mark hold kubelet kubeadm kubectl
+
+$ systemctl enable kubelet --now
+
+$ IPADDR=$(hostname -I |awk '{ print $1 }')
+
+$ kubeadm init --apiserver-advertise-address $IPADDR --pod-network-cidr=10.0.0.0/16
+
+
+$ mkdir -p $HOME/.kube
+
+$ cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+$ chown $(id -u):$(id -g) $HOME/.kube/config
+
+$ kubectl apply -f https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml # $ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+$ kubeadm token create --print-join-command
+
+$ kubectl get nodes #kubectl describe node master
+
+$ kubectl get pods --all-namespaces

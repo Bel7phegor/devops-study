@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - /data/cassandra:/var/lib/cassandra
+    restart: always

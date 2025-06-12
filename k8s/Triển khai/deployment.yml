@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+  labels:
+    app: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: <your-registry-url>/my-app:1.0
+        ports:
+        - containerPort: 80
+        env:
+          - name: ENV_VAR_1
+            value: "example_value_1"
+          - name: ENV_VAR_2
+            valueFrom:
+              configMapKeyRef:
+                name: example-config-map
+                key: config-key-1
+        envFrom:
+          - configMapRef:
+              name: example-config-map
+          - secretRef:
+              name: example-secret
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      imagePullSecrets:
+      - name: my-registry-cred
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0

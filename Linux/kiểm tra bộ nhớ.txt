@@ -1,0 +1,2 @@
+$ du -h --max-depth=1 / | sort -hr #kiểm tra danh sách các thư mục dung lượng lớn
+$ du -h -d 1 /var/ | sort -rh #kiểm tra thư mục con của var
