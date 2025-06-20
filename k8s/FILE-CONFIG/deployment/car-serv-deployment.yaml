@@ -1,0 +1,32 @@
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
+    name: car-serv-deployment
+    namespace: car-serv
+  spec:
+    replicas: 3
+    revisionHistoryLimit: 11
+    selector:
+      matchLabels:
+        workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
+        namespace: car-serv
+      spec:
+        containers:
+          - image: elroydevops/car-serv
+            imagePullPolicy: Always
+            name: car-serv
+            ports:
+              - containerPort: 80
+                name: tcp
+                protocol: TCP

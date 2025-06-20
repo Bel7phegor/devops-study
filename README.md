@@ -1,4 +1,3 @@
-elroydevops.tech
 # DEVOPS
 - Là tổ hợp của văn hóa, con người và công cụ
 - Tạo sao áp dụng nó cho doanh nghiệp 

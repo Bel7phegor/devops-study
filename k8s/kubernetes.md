@@ -63,16 +63,16 @@ Mục lục
     - [3.16.1. Mục đích:](#3161-mục-đích)
     - [3.16.2. Khác biệt](#3162-khác-biệt)
     - [3.16.3. Các loại tài nguyên chính](#3163-các-loại-tài-nguyên-chính)
+  - [HPA (autoscale)](#hpa-autoscale)
+    - [Horiontal Pod Autoscaler (HPA)](#horiontal-pod-autoscaler-hpa)
+    - [Metric Server](#metric-server)
+  - [Sử dụng Rancher](#sử-dụng-rancher)
+  - [Sử dụng RBAC Rancher](#sử-dụng-rbac-rancher)
 - [4. Xây dựng công cụ dự án](#4-xây-dựng-công-cụ-dự-án)
+  - [Triển khai công cụ](#triển-khai-công-cụ)
+  - [StorageClass](#storageclass)
 - [5. Giám sát và quản trị Kubernetes](#5-giám-sát-và-quản-trị-kubernetes)
-- [6. Triển khai k8s trên k3s](#6-triển-khai-k8s-trên-k3s)
-  - [6.1. Bước 1: Gỡ cài đặt Kubernetes (kubeadm, kubelet, kubectl)](#61-bước-1-gỡ-cài-đặt-kubernetes-kubeadm-kubelet-kubectl)
-  - [6.2. Bước 2: (Tuỳ chọn) Gỡ containerd (nếu muốn dùng k3s tự cài containerd riêng)](#62-bước-2-tuỳ-chọn-gỡ-containerd-nếu-muốn-dùng-k3s-tự-cài-containerd-riêng)
-  - [6.3. Bước 3: Tắt swap (bạn đã làm rồi), vẫn giữ nguyên.](#63-bước-3-tắt-swap-bạn-đã-làm-rồi-vẫn-giữ-nguyên)
-  - [6.4. Bước 4: Cài đặt K3s](#64-bước-4-cài-đặt-k3s)
-    - [6.4.1. Cấu hình sysctl](#641-cấu-hình-sysctl)
-    - [6.4.2. Cài đặt k3s trên node đầu tiên (192.168.1.111)](#642-cài-đặt-k3s-trên-node-đầu-tiên-1921681111)
-    - [6.4.3. Cài đặt k3s trên node thứ hai (192.168.1.112)](#643-cài-đặt-k3s-trên-node-thứ-hai-1921681112)
+- [6. Triển khai k8s trên ổ /data](#6-triển-khai-k8s-trên-ổ-data)
 
 # 1. Khởi đầu
 ## 1.1. Kubernetes là gì? (K8S) {c}
@@ -408,7 +408,7 @@ Là 1 cách tổ chức và phân tách các tài nguyên trong 1 cụm k8s đ�
     ```
     mkfs.ext4 -m 0 /dev/sdb
     mkdir /data
-    echo "/dev/sdb /data ext4 default 0 0" | tee -a /etc/fstab
+    echo "/dev/sdb /data ext4 defaults 0 0" | tee -a /etc/fstab
     
     cat /etc/fstab
     mount -a  
@@ -558,52 +558,52 @@ vi pod.yaml
     apiVersion: apps/v1           # API version cần thiết cho Deployment
     kind: Deployment              # Kiểu đối tượng là Deployment
     metadata:
-    name: nginx-deployment      # Tên của Deployment
-    labels:
-        app: nginx                # Nhãn gắn cho Deployment (không bắt buộc)
-    spec:
-    replicas: 2                 # Số lượng Pod muốn chạy
-    selector:
-        matchLabels:
-        app: nginx              # Deployment sẽ quản lý các Pod có label này
-    template:                   # Mẫu để tạo các Pod
-        metadata:
+        name: nginx-deployment      # Tên của Deployment
         labels:
-            app: nginx            # Nhãn gắn cho Pod (phải khớp với selector)
-        spec:
-        containers:
-        - name: nginx           # Tên container trong Pod
-            image: nginx:1.25     # Ảnh Docker để chạy container
-            ports:
-            - containerPort: 80   # Mở cổng trong container
+            app: nginx                # Nhãn gắn cho Deployment (không bắt buộc)
+    spec:
+        replicas: 2                 # Số lượng Pod muốn chạy
+        selector:
+            matchLabels:
+            app: nginx              # Deployment sẽ quản lý các Pod có label này
+        template:                   # Mẫu để tạo các Pod
+            metadata:
+                labels:
+                    app: nginx            # Nhãn gắn cho Pod (phải khớp với selector)
+            spec:
+            containers:
+            - name: nginx           # Tên container trong Pod
+                image: nginx:1.25     # Ảnh Docker để chạy container
+                ports:
+                - containerPort: 80   # Mở cổng trong container
 ---
     apiVersion: apps/v1
     kind: Deployment
     metadata:
-    labels:
-        workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
-    name: car-serv-deployment
-    namespace: car-serv
-    spec:
-    replicas: 2
-    revisionHistoryLimit: 11
-    selector:
-        matchLabels:
-        workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
-    template:
-        metadata:
         labels:
             workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
+        name: car-serv-deployment
         namespace: car-serv
-        spec:
-        containers:
-            - image: elroydevops/car-serv
-            imagePullPolicy: Always
-            name: car-serv
-            ports:
-                - containerPort: 80
-                name: tcp
-                protocol: TCP
+    spec:
+        replicas: 2
+        revisionHistoryLimit: 11
+        selector:
+            matchLabels:
+                workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
+        template:
+            metadata:
+                labels:
+                    workload.user.cattle.io/workloadselector: apps.deployment-car-serv-car-serv-deployment
+                namespace: car-serv
+            spec:
+                containers:
+                    - image: elroydevops/car-serv
+                    imagePullPolicy: Always
+                    name: car-serv
+                    ports:
+                        - containerPort: 80
+                        name: tcp
+                        protocol: TCP
     
 - Với mô hình ở dưới: 
     <div style="display: flex; justify-content: center; align-items: center;">
@@ -699,9 +699,10 @@ Là 1 đối tượng dùng để định nghĩa cách tiếp cận đến các 
     | **LoadBalancer**         | Tích hợp với cloud provider để tạo IP public                   | Truy cập ngoài internet       |
     | **ExternalName**         | Trỏ đến một hostname bên ngoài cluster                         | Dùng DNS alias                |
 
+- ClusterIP: tạo các IP cho phép các pod có thể giao tiếp nội bộ bên trong và bên ngoài không thể giao tiếp được, muốn truy cập được thì phải expose ra bên ngoài thông qua Ingress hoặc Gateway
 - NodePort: mở 1 port từ ứng dụng ra bên ngoài, truy cập trực tiếp vào pod mà không đi qua bất kỳ đường nào.
-- Loadbalancer: Điều phối lưu lượng đến các pod tương ứng, phải đi qua 1 cỗng nữa r mới qua được k8s 
-- ExtenalName: Lk với 1 domain ở bên ngoài, koong tương tác vs k8s mà tương tác vs domain
+- Loadbalancer: (Dành cho các nền tảng cloud) Điều phối lưu lượng đến các pod tương ứng, phải đi qua 1 cỗng nữa r mới qua được k8s 
+- ExtenalName: Lk với 1 domain ở bên ngoài, không tương tác vs k8s mà tương tác vs domain
 
 ### 3.9.1. NodePort
 #### 3.9.1.1. On-premit
@@ -720,7 +721,7 @@ Là 1 đối tượng dùng để định nghĩa cách tiếp cận đến các 
     - Selector: Chỉ định deployment nào
     ```
     Key: app
-    Values: Đặt trùng với labels app:
+    Values: Đặt trùng với labels app: car-serv-deployment
     ```
 - Thường không được sử dụng và chỉ được sd khi export ứng dụng ra bên ngoài nhanh chóng để có thể debug, thu thập thông tin,.. 
 #### 3.9.1.2. On Cloud
@@ -788,7 +789,7 @@ Là 1 đối tượng dùng để định nghĩa cách tiếp cận đến các 
     ```
 
 ### 3.9.2. ClusterIP
-- Khởi tạoL Service Discovery -> Services -> Create ClusterIP
+- Khởi tạo Service Discovery -> Services -> Create ClusterIP
 `
 Name: car-serv1-service
 ; PortName: tcp
@@ -1296,77 +1297,186 @@ Tránh việc container chiếm dụng quá nhiều tài nguyên, ảnh hưởng
     - Ví dụ: 256Mi = 256 mebibytes, 1Gi = 1 gibibyte.
     - Kubernetes dùng cgroup để giới hạn bộ nhớ.
 
+## HPA (autoscale)
+- Làm sao dự án có khả năng chịu tải và tính ổn định của dự án cũng như làm thế nào để giúp dự án có thể tăng giảm tài nguyên khi mà lượng traffic biến động 
+- Scale là quá trình mở rộng hay thu nhỏ tài nguyên của hệ thống để đáp ứng được tốt hơn nhu cầu sử dụng khi lưu lượng hoặc khối lượng công việc tăng hoặc giảm 
+- Những tác nhân làm cho dự án bị chậm thường đến từ CPU, RAM, Network, Loadbance, ...
+- Có 2 loại chính (Vertial Scaling và Horizontal Scaling)
+  - Tăng theo chiều dọc (Vertial Scaling): Tăng giảm CPU, memory 
+  - Tăng Theo chiều ngang (Horizontal Scaling): Thêm số lượng intance, pod (HPA)
+### Horiontal Pod Autoscaler (HPA)
+- Dựa theo 2 tài nguyên: CPU và memory 
+- Ví dụ ở pod dự án backend khi nào lượng truy cập vượt quá 80% của limit thì lúc đó sẽ tiến hành scale ra các pod khác và set giá trị min và max của pod 
+- Cần tinh chỉnh kỹ vì có khi sử dụng autoscale nó sẽ kiểm tra memory hoặc CPU nó sẽ tiến hành thêm các pod mới dễ bị tăng quá nhanh pod có thể bị over resource 
+### Metric Server 
+- Công cụ thu thập tài nguyên của pod để đánh giá được pod đang sử dụng (Metric Server) [Metric Server Git](https://github.com/kubernetes-sigs/metrics-server)
+
+- Cài đặt bằng helm trên k8s (master-1)
+    ```
+    helm repo add  metric-server https://kubernetes-sigs.github.io/metrics-server/
+    helm pull metric-server/metrics-server
+    tar -xvf metrics-server-*
+    helm install metric-server metrics-server -n kube-system
+    ```
+- Sửa deployment của kube-system
+    ```
+    spec:
+        containers:
+            - args:
+                **Đổi tất cả port 1110 -> 4443**
+                '--secure-port-4443'
+                -'--kubelet-insecure-tls-true'
+    ```
+- Kiểm tra nhanh: 
+    ```
+    kubectl top nodes 
+    kubectl top pod -n ecommerce
+    ```
+- HPA trên giao diện ở trong Service Discovery -> HPA
+- Tạo HPA bằng file cấu hình
+    ```
+    apiVersion: autoscaling/v1
+    kind: HoriontalPodAutoscaler
+    metadata:
+        name: ecommerce-backend-autoscaling
+        namespace: ecommerce
+    spec:
+        scaleTargetRef:
+            apiVersion: apps/v1
+            kind: deployment
+            name: ecommere-backend-deployment
+        minReplicas: 2
+        maxReplicas: 4
+        targetCPUUtilizationPercentage: 50
+    ```
+    > Định nghĩa: 
+    > - scaleTargetRef: Thuộc tính xác định theo dõi, giám sát tài nguyên nào
+    > - targetCPUUtilizationPercentage: Chỉ định giá trị nào vượt ngưỡng thì tiến hành scale lên 
+- Test hệ thống bằng cách stress 
+excuse vào pod sau đó cài đặt stress
+    ```
+    apk update
+    apk add stress-ng
+    stress-ng --cpu 1
+    stress
+    ```
+## Sử dụng Rancher 
+## Sử dụng RBAC Rancher 
+- Role-based access control(RBAC): Để phân quyền được chính xác 
+- Trên Rancher:
+  - Users and Authentication: Tạo user và thiết lập quyền cho user
+  - Global Permisions
+    - Admin: toàn quyền
+    - Restriced Admin: Full control ở các tài nguyên cluster nhưng mà không đc access ở cái local 
+    - Standard User: Tạo user mới và quản lý cluster các project mà được gán quyền (Thường được sử dụng trong 1 team)
+- Sau đó vào role templates để gán quyền 
+    - Owner hoặc memmber
+    - Custom: các role có sẵn ở template hoặc tạo thêm các quyền
+
 # 4. Xây dựng công cụ dự án 
+## Triển khai công cụ
+- Các công cụ database
+- Với dự án nhỏ thì nên triển khai trực tiếp lên server 
+## StorageClass
+- Lưu trữ dữ liệu
+- 
 # 5. Giám sát và quản trị Kubernetes 
-# 6. Triển khai k8s trên k3s 
-## 6.1. Bước 1: Gỡ cài đặt Kubernetes (kubeadm, kubelet, kubectl)
-Chạy lệnh sau trên tất cả các node đã cài:
+# 6. Triển khai k8s trên ổ /data
+- Cấu hình Kubernetes sử dụng ổ /data để lưu trữ dữ liệu
+1. Chuẩn bị ổ /data
+    ```
+    sudo mkfs.ext4 /dev/sdb
+    sudo mkdir /data
+    echo "/dev/sdb /data ext4 defaults 0 0" | sudo tee -a /etc/fstab
+    sudo mount -a
+    # Kiểm tra
+    df -h /data
+    ```
+2. Di chuyển các thư mục quan trọng của Kubernetes sang /data
+- Di chuyển thư mục containerd
+    ```
+    # Dừng các dịch vụ
+    sudo systemctl stop kubelet
+    sudo systemctl stop containerd
 
-```
-sudo kubeadm reset -f
-sudo systemctl stop kubelet
-sudo systemctl disable kubelet
-sudo apt-mark unhold kubelet kubeadm kubectl
-sudo apt purge -y kubelet kubeadm kubectl
-sudo apt autoremove -y
-```
+    # Di chuyển dữ liệu
+    sudo mv /var/lib/containerd /data/
+    sudo ln -s /data/containerd /var/lib/containerd
+    ```
+- Di chuyển thư mục kubelet
 
-Xoá thêm các file cấu hình (nếu có):
-```
-sudo rm -rf ~/.kube
-sudo rm -rf /etc/kubernetes/
-sudo rm -rf /var/lib/etcd
-sudo rm -rf /var/lib/kubelet
-```
-## 6.2. Bước 2: (Tuỳ chọn) Gỡ containerd (nếu muốn dùng k3s tự cài containerd riêng)
-```
-sudo systemctl stop containerd
-sudo systemctl disable containerd
-sudo apt purge -y containerd.io
-sudo rm -rf /etc/containerd /var/lib/containerd 
-```
-## 6.3. Bước 3: Tắt swap (bạn đã làm rồi), vẫn giữ nguyên.
-## 6.4. Bước 4: Cài đặt K3s
-### 6.4.1. Cấu hình sysctl
-```
-cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-EOF
-sudo sysctl --system
-```
-### 6.4.2. Cài đặt k3s trên node đầu tiên (192.168.1.111)
-```
-curl -sfL https://get.k3s.io | sh -s - server \
-  --cluster-init \
-  --node-ip 192.168.1.111 \
-  --node-external-ip 192.168.1.111 \
-  --tls-san 192.168.1.111 \
-  --tls-san 192.168.1.112 \
-  --tls-san k8s-master-1 \
-  --tls-san k8s-master-2 \
-  --disable traefik \
-  --disable servicelb \
-  --write-kubeconfig-mode 644 \
-  --node-taint "CriticalAddonsOnly=true:NoExecute"
-```
-Sau khi cài đặt xong, lấy token để join node thứ 2:
-```
-sudo cat /var/lib/rancher/k3s/server/node-token
-```
-### 6.4.3. Cài đặt k3s trên node thứ hai (192.168.1.112)
-```
-curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://192.168.1.111:6443 \
-  --token <TOKEN_TỪ_MASTER_1> \
-  --node-ip 192.168.1.112 \
-  --node-external-ip 192.168.1.112 \
-  --tls-san 192.168.1.111 \
-  --tls-san 192.168.1.112 \
-  --tls-san k8s-master-1 \
-  --tls-san k8s-master-2 \
-  --disable traefik \
-  --disable servicelb \
-  --write-kubeconfig-mode 644 \
-  --node-taint "CriticalAddonsOnly=true:NoExecute"
-```
+    ```
+    # Tạo thư mục mới
+    sudo mkdir -p /data/kubelet
+
+    # Sao chép dữ liệu hiện có (nếu có)
+    sudo cp -a /var/lib/kubelet/* /data/kubelet/
+
+    # Cập nhật cấu hình kubelet
+    sudo sed -i 's|/var/lib/kubelet|/data/kubelet|g' /var/lib/kubelet/config.yaml
+
+    # Tạo symbolic link
+    sudo mv /var/lib/kubelet /var/lib/kubelet.bak
+    sudo ln -s /data/kubelet /var/lib/kubelet
+    ```
+- Di chuyển thư mục etcd (cho control plane)
+
+    ```
+    # Di chuyển dữ liệu etcd
+    sudo mv /var/lib/etcd /data/
+    sudo ln -s /data/etcd /var/lib/etcd
+
+    # Sửa file manifest etcd
+    sudo sed -i 's|/var/lib/etcd|/data/etcd|g' /etc/kubernetes/manifests/etcd.yaml
+
+    sudo systemctl start kubelet
+    ```
+3. Cấu hình Kubernetes sử dụng /data
+
+- Cấu hình kubeadm (cho các lần init sau)
+    ```
+    sudo mkdir -p /etc/kubernetes/pki/etcd
+    sudo tee /etc/kubernetes/kubeadm-config.yaml <<EOF
+    apiVersion: kubeadm.k8s.io/v1beta3
+    kind: InitConfiguration
+    nodeRegistration:
+    kubeletExtraArgs:
+        root-dir: "/data/kubelet"
+    ---
+    apiVersion: kubeadm.k8s.io/v1beta3
+    kind: ClusterConfiguration
+    etcd:
+    local:
+        dataDir: "/data/etcd"
+    EOF
+    ```
+b. Cấu hình containerd
+    ```
+
+    sudo tee /etc/containerd/config.toml <<EOF
+    version = 2
+    root = "/data/containerd"
+    state = "/run/containerd"
+    [plugins."io.containerd.grpc.v1.cri"]
+    sandbox_image = "registry.k8s.io/pause:3.9"
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+    runtime_type = "io.containerd.runc.v2"
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+        SystemdCgroup = true
+    EOF
+    sudo systemctl restart containerd
+    ```
+
+4. Kiểm tra
+    ```
+    # Kiểm tra mount point
+    df -h /data
+    # Kiểm tra các thư mục
+    ls -l /data
+    # Kiểm tra kubelet
+    sudo systemctl status kubelet
+    # Kiểm tra containerd
+    sudo systemctl status containerd
+    # Kiểm tra etcd
+    kubectl get pods -n kube-system | grep etcd
+    ```
