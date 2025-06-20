@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: car-serv-service
+  namespace: car-serv-ns
+spec:
+  ports:
+    - name: tcp
+      nodePort: 32080
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: car-serv-deployment
+  type: NodePort
