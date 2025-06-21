@@ -1031,7 +1031,7 @@ Khi chạy: `helm install myapp ./mychart`
 - Vào trình quản lý domain và trỏ domain vào cái public ip của loadbalancer 
 - Tiến hành tìm ip để trỏ tới: `kubectl get all -n car-serv`, `kubectl get ingress -n car-serv`-> address vào host
 ## 3.12. Template yaml 
-- Ở các phần trên ta đã triển khai owr Op-premit: deployment, services, Ingress -> download các file cấu hình này về sau đó tối ưu file tất cả phần nào là cấu hình mặc định như annoitaion, timestamp hay managerFied thì sẽ xóa bỏ 
+- Ở các phần trên ta đã triển khai ở On-premit: deployment, services, Ingress -> download các file cấu hình này về sau đó tối ưu file tất cả phần nào là cấu hình mặc định như annoitaion, timestamp hay managerFied thì sẽ xóa bỏ 
 ## 3.13. Triển khai dự án Fullstack
 ### 3.13.1. Mô hình dự án 
 ![alt text](Images/image-15.png)

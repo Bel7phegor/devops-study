@@ -2,12 +2,12 @@
 - Là tổ hợp của văn hóa, con người và công cụ
 - Tạo sao áp dụng nó cho doanh nghiệp 
     ## Linux 
-        - Tối ưu hóa hiệu suất và chi phí 
-        - Bảo mật và ổn định
-        - Khả năng kiểm soát và linh hoạt 
-        - Phát triển và cập nhật 
-        - Tương thích đa nền tảng
-        - Cộng đồng phát triển lớn
+    	Tối ưu hóa hiệu suất và chi phí 
+    	Bảo mật và ổn định
+    	Khả năng kiểm soát và linh hoạt 
+    	Phát triển và cập nhật 
+    	Tương thích đa nền tảng
+    	Cộng đồng phát triển lớn
         
     - Các lệnh hay làm việc: 
         -   useradd và adduser:  đều tạo ra 1 user nhưng useradd chỉ tạo ra user, không tạo ra thư mục và các giá trị khác giống adduser
@@ -21,103 +21,118 @@
             chown -R root:devops2: đổi nhóm sở hữu tất cả file con ở dưới luôn 
         - Quyền truy cập: 
             - chmod g=rwx datas/ : cấp quyền cho group 
-       ### Tư duy để triển khai dự án 
-            - đều p có công cụ để triển khai tương ứng
-            - Phiên bản phải lớn hơn hoặc bằng yeeu cầu của dự án 
-            - Trong dự án đều chia làm 3 file
-                - file chức năng: code, giỏ hàng ,...
-                - file cấu hình: file devops cần quan tâm 
-                - file khác: 
-            - Có 2 bước triển khai:
-                - Build và Run
-            - Công cụ gì? File cấu hình ở đâu?, làm sao để build? Run thế nào? 
-            Trong mỗi dự án đều có thư mục làm việc riêng và user riêng cho dự án
-       ### Triển khai các dự án Frontend:
-            Tạo thư mục project riêng, tạo người dùng và phân quyền thư mục, tệp 
-            - Tạo thư mục /projects và copy todolist đã giải nén vào 
-            - Tạo user todolist và phân quyền thư mục 
-            - Chown -R todolist:todolist /projects/todolist
-            - Chmod -R 750 /projects/todolist 
-            
-            - Tìm kiếm các ngôn ngữ, công cụ cần build trên gg vd: how to build vue project -> yêu cầu cài node js và npm 
-            - curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-            - sudo apt install -y nodejs
-            - node --version
-            - apt install npm -y
-                
-            - Cài đặt các công cụ cần thiết
-            - Chú ý các file cấu hình: vd: package.json -> scripts: ...., vue.config.js -> xem thử sử dung port bao nhiêu 
-            
-            - Build dự án bằng serve, web server, service tự tạo
-            - npm install	
-            - npm run build
-            - npm run start
-            - netstat -tlpun 
-            
-        ### Build bằng webserver nginx
-            - Tải về và kiểm tra hoạt động
-            - Vào thư mục conf.d/ để tạo ra 1 file .conf cho riêng trang web 
-            - conf.d/todolist.conf 
-                - server {
-                    listen 8081;
-                    root /projects/todolist/dist/;
-                    index index.html;
-                    try_files $uri $uri/ /index.html;
-                }
+    ## Tư duy để triển khai dự án 
+    - Đều phải có công cụ để triển khai tương ứng
+    - Phiên bản phải lớn hơn hoặc bằng yêu cầu của dự án 
+    - Trong dự án đều chia làm 3 file
+        - file chức năng: code, giỏ hàng ,...
+        - file cấu hình: file devops cần quan tâm 
+        - file khác: 
+    - Có 2 bước triển khai:
+        - Build và Run
+    - Công cụ gì? File cấu hình ở đâu?, làm sao để build? Run thế nào? 
+    - Trong mỗi dự án đều có thư mục làm việc riêng và user riêng cho dự án
+	### Triển khai các dự án Frontend: (todolist)
+	- Tạo thư mục project riêng, tạo người dùng và phân quyền thư mục, tệp 
+		- Tạo thư mục /projects và copy todolist đã giải nén vào 
+		- Tạo user todolist và phân quyền thư mục 
+		```
+		chown -R todolist:todolist /projects/todolist
+		chmod -R 750 /projects/todolist 
+		```
+		- Tìm kiếm các ngôn ngữ, công cụ cần build trên gg vd: `how to build vue project` -> yêu cầu cài node js và npm 
+		```
+		curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+		sudo apt install -y nodejs
+		node --version
+		apt install npm -y
+		```
+		- Cài đặt các công cụ cần thiết
+		- Chú ý các file cấu hình: vd: package.json -> scripts: ...., vue.config.js -> xem thử sử dung port bao nhiêu 
+		
+		- Build dự án bằng serve, web server, service tự tạo
+		```
+		npm install	
+		npm run build
+		npm run start
+		netstat -tlpun 
+		```
+        #### Build bằng webserver nginx
+        - Tải về và kiểm tra hoạt động
+        - Vào thư mục conf.d/ để tạo ra 1 file .conf cho riêng trang web 
+            `vi conf.d/todolist.conf`
+
+			```
+			server {
+				listen 8081;
+				root /projects/todolist/dist/;
+				index index.html;
+				try_files $uri $uri/ /index.html;
+			}
+			```
             - Khởi động lại kiểm tra trang web, nếu vẫn không thể truy cập thì xem lại phân quyền, đã thêm nginx vào groups hay chưa 
-            - Khởi dộng và hoàn thành nginx -s reload 
-            - vào kiểm tra thấy lỗi 500 là do chưa cho www-data của nginx vào group của todolist 
-            - usermod - aG todolist www-data
+            - Khởi động và hoàn thành `nginx -s reload`
+            - Vào kiểm tra thấy lỗi 500 là do chưa cho www-data của nginx vào group của todolist 
+            - `usermod - aG todolist www-data`
                 
-        ### Build bằng service 
-            - Tạo 1 file trong /lib/systemd/system/<tên file>.service
-                -	[Service]
-                    Type=simple
-                    User=vision
-                    Restart=on-failure -> service bị down thì tự động khởi động lại 
-                    WorkingDirectory=/project/<lưu trữ>
-                    ExecStart=npm run start -- --port=3000
-            - Systemctl daemon-reload
-            - Systemctl start vision 
-            - Systemctl status vision 
-            -> kiểm tra trên trình duyệt với ip 3000 
-            kiểm tra cổng bằng netstat -tlpn 
+        #### Build bằng service 
+        - Tạo 1 file trong /lib/systemd/system/<tên file>.service
+        
+			```
+                [Service]
+                Type=simple
+                User=vision
+                Restart=on-failure -> service bị down thì tự động khởi động lại 
+                WorkingDirectory=/project/<lưu trữ>
+                ExecStart=npm run start -- --port=3000
+
+            Systemctl daemon-reload
+            Systemctl start vision 
+            Systemctl status vision
+			```
+            -> kiểm tra trên trình duyệt với ip 3000,kiểm tra cổng bằng netstat -tlpn 
         ### Triển khai các dự án backend
-            - Cài đặt công cụ cần thiết => công cụ
-            - Xem và sửa file cấu hình => file cấu hình 
-                - check xem có file pom.xml hay không => 
-            - Cài đặt và thiết lập database => công cụ 
-                - Cấu hình port ở đâu, đến database nào 
-                - thấy tìm file application.properties -> config database spring boot 
-                    /src/main/source/ 
-                
-                - check port 3306 đang ở dạng local hay không 127.0.0.1:3306, các server khác không thể truy cập đến được 
-                    -> đổi thành 0.0.0.0 -> stop mariadb -> vào config /etc/mysql/mariadb.conf.d/50-server.cnf 
-                    -> sửa bind-address
-                - Thêm dự án, file ,sql vào database => tạo database, tạo user tương ứng 
-                    mysql -u root 
-                    show database;
-                    create database shoeshop; 
-                    create user 'shoeshop'@'%' identified by 'shoeshop'; # '%' -> phạm vi truy cập đến tất cả các server 
-                    grant all privileges on shoeshop.* to 'shoeshop'@'%'; # -> Gán quyền cho user đó đủ quyền tác động lên database đó áp dụng lên '*': áp dụng tất cả tài nguyên của shoeshop
-                    flush privileges; # lưu lại quyền đã được thay đổi 
-                - Truy cập vào database 
-                    mysql -h: host 123.123.123.169 -P:port 3306 -u:user shoeshop -p
-                    show database
-                    use shoeshop;
-                    show tables;
-                    source /project/shoeshop/shoe_shopdb.sql
-                    show tables;
-                - Sửa file cấu hình của database 'application.properties' 
-            - Build dự án => build 
-                mvn install -DskipTests=true # Bỏ qua quá trình test trực tiếp của tool 
-                - java -jar target/....
-            - Run dự án => run 
-            - Kiểm tra hoạt động => check
-            - câu lệnh chạy ngầm để xem log
-                nohup java -jar target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar 2>&1 &
-                ps -ef | grep shoe
-                kill -9
+        - Cài đặt công cụ cần thiết => công cụ
+        - Xem và sửa file cấu hình => file cấu hình 
+            - check xem có file pom.xml hay không => 
+        - Cài đặt và thiết lập database => công cụ 
+            - Cấu hình port ở đâu, đến database nào 
+            - Thấy tìm file `application.properties` -> config database spring boot ở `/src/main/source/` 
+            - Check port 3306 đang ở dạng local hay không 127.0.0.1:3306, các server khác không thể truy cập đến được -> đổi thành `0.0.0.0` -> stop mariadb -> vào config `/etc/mysql/mariadb.conf.d/50-server.cnf ` -> sửa bind-address
+            - Thêm dự án, file ,sql vào database => tạo database, tạo user tương ứng 
+            
+				```
+				mysql -u root 
+				show database;
+				create database shoeshop; 
+				create user 'shoeshop'@'%' identified by 'shoeshop'; # '%' -> phạm vi truy cập đến tất cả các server 
+				grant all privileges on shoeshop.* to 'shoeshop'@'%'; # -> Gán quyền cho user đó đủ quyền tác động lên database đó áp dụng lên '*': áp dụng tất cả tài nguyên của shoeshop
+				flush privileges; # lưu lại quyền đã được thay đổi 
+				```
+            - Truy cập vào database
+				```
+				mysql -h: host 123.123.123.169 -P:port 3306 -u:user shoeshop -p
+				show database
+				use shoeshop;
+				show tables;
+				source /project/shoeshop/shoe_shopdb.sql
+				show tables;
+				```
+            - Sửa file cấu hình của database `application.properties`
+        - Build dự án => build 
+        
+            ```
+			mvn install -DskipTests=true # Bỏ qua quá trình test trực tiếp của tool 
+            - java -jar target/....
+			```
+        - Run dự án => run 
+        - Kiểm tra hoạt động => check
+        - Câu lệnh chạy ngầm để xem log
+			```
+			nohup java -jar target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar 2>&1 &
+			ps -ef | grep shoe
+			kill -9
+			```
 
     ## Git
     - Bao gồm 3 phần: môi trường phát triển, testing, chạy thật
@@ -839,10 +854,4 @@
 			- custom workDir /var/lib/jenkins 
 			- Cần đi vào port nào đó và mở 1 đầu vào cho agent đi vào ở server 
 			- vào lại sercurity -> agents -> fixed port (chọn port nào chưa có dịch vụ chạy vd 8999)
-			
-
-
-
-
-
 	## Monitoring:
