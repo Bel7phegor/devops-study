@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: car-serv-ingress
+  namespace: car-serv-ns
+spec:
+  defaultBackend:
+    service:
+      name: car-serv-service
+      port:
+        number: 80
+  ingressClassName: nginx
+  rules:
+    - host: anphuc-onpremit.tech.vn
+      http:
+        paths:
+          - backend:
+              service:
+                name: car-serv-service
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix

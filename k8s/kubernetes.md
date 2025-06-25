@@ -881,16 +881,73 @@ Khi chạy: `helm install myapp ./mychart`
     helm search repo nginx
     helm pull ingress-nginx/ingress-nginx
     tar -xzf ingress-nginx-4.11.3.tgz
-    
-    vi ingress-nginx/values.yaml
+    ```
+    `vi ingress-nginx/values.yaml`
 
-     Sửa type: LoadBalancing => type: NodePort
-     Sửa nodePort http: "" => http: "30080"
-     Sửa nodePort https: "" => https: "30443"
-    kubectl create ns ingress-nginx
+    ![alt text](Images/image-type.png)
+    ```
+    Sửa type: LoadBalancing => type: NodePort
+    Sửa nodePort http: "" => http: "30080"
+    Sửa nodePort https: "" => https: "30443"
     helm -n ingress-nginx install ingress-nginx -f ingress-nginx/values.yaml ingress-nginx
     ```
+    
+    ```
+    NAME: ingress-nginx
+    LAST DEPLOYED: Wed Jun 25 11:41:15 2025
+    NAMESPACE: ingress-nginx
+    STATUS: deployed
+    REVISION: 2
+    TEST SUITE: None
+    NOTES:
+    The ingress-nginx controller has been installed.
+    Get the application URL by running these commands:
+      export HTTP_NODE_PORT=30080
+      export HTTPS_NODE_PORT=30443
+      export NODE_IP="$(kubectl get nodes --output jsonpath="{.items[0].status.addresses[1].address}")"
 
+      echo "Visit http://${NODE_IP}:${HTTP_NODE_PORT} to access your application via HTTP."
+      echo "Visit https://${NODE_IP}:${HTTPS_NODE_PORT} to access your application via HTTPS."
+
+    An example Ingress that makes use of the controller:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: example
+        namespace: foo
+      spec:
+        ingressClassName: nginx
+        rules:
+          - host: www.example.com
+            http:
+              paths:
+                - pathType: Prefix
+                  backend:
+                    service:
+                      name: exampleService
+                      port:
+                        number: 80
+                  path: /
+        # This section is only required if TLS is to be enabled for the Ingress
+        tls:
+          - hosts:
+            - www.example.com
+            secretName: example-tls
+
+    If TLS is enabled for the Ingress, a Secret containing the certificate and key must also be provided:
+
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: example-tls
+        namespace: foo
+      data:
+        tls.crt: <base64 encoded cert>
+        tls.key: <base64 encoded key>
+      type: kubernetes.io/tls
+
+    ```
+    * Ở môi trường cloud thì type: Loadbancer còn On-premit thì type: NodePort
 -> Sau khi đã thêm thành công ta copy các dòng được hiển thị 
 #### 3.11.1.3. Triển khai loadbalancer
 - Loadbalance: cân bằng tải các node pod của k8s đi ra bên ngoài client (Nginx hoặc HAProxy)
@@ -935,16 +992,16 @@ Khi chạy: `helm install myapp ./mychart`
     kind: Ingress
     metadata:
         name: car-serv-ingress
-        namespace: car-serv
+        namespace: car-serv-ns
     spec:
         ingressClassName: nginx
         rules:
-            - host: car-serv-onpre.devopsedu.vn
+            - host: anphuc-onpremit.tech.vn
             http:
                 paths:
                 - backend:
                     service:
-                        name: car-serv1-service
+                        name: car-serv-service
                         port:
                         number: 80
                     path: /
