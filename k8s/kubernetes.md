@@ -1,4 +1,5 @@
-Mục lục
+<h1>Mục lục</h1>
+
 - [1. Khởi đầu](#1-khởi-đầu)
   - [1.1. Kubernetes là gì? (K8S) {c}](#11-kubernetes-là-gì-k8s-c)
   - [1.2. Mô hình triển khai](#12-mô-hình-triển-khai)
@@ -63,28 +64,28 @@ Mục lục
     - [3.16.1. Mục đích:](#3161-mục-đích)
     - [3.16.2. Khác biệt](#3162-khác-biệt)
     - [3.16.3. Các loại tài nguyên chính](#3163-các-loại-tài-nguyên-chính)
-  - [HPA (autoscale)](#hpa-autoscale)
-    - [Horiontal Pod Autoscaler (HPA)](#horiontal-pod-autoscaler-hpa)
-    - [Metric Server](#metric-server)
-  - [Sử dụng Rancher](#sử-dụng-rancher)
-  - [Sử dụng RBAC Rancher](#sử-dụng-rbac-rancher)
+  - [3.17. HPA (autoscale)](#317-hpa-autoscale)
+    - [3.17.1. Horiontal Pod Autoscaler (HPA)](#3171-horiontal-pod-autoscaler-hpa)
+    - [3.17.2. Metric Server](#3172-metric-server)
+  - [3.18. Sử dụng Rancher](#318-sử-dụng-rancher)
+  - [3.19. Sử dụng RBAC Rancher](#319-sử-dụng-rbac-rancher)
 - [4. Xây dựng công cụ dự án](#4-xây-dựng-công-cụ-dự-án)
-  - [Triển khai công cụ](#triển-khai-công-cụ)
-  - [StorageClass](#storageclass)
-    - [Ứng dụng](#ứng-dụng)
-    - [NFS](#nfs)
-    - [Cú pháp khai báo](#cú-pháp-khai-báo)
-  - [PV (Persistent Volume) và PVC (Persistent Volume Claim)](#pv-persistent-volume-và-pvc-persistent-volume-claim)
-    - [PV là gì?](#pv-là-gì)
-    - [PVC là gì?](#pvc-là-gì)
-    - [Những phần đặc biệt phải biết khi sử dụng PV và PVC](#những-phần-đặc-biệt-phải-biết-khi-sử-dụng-pv-và-pvc)
-    - [Cú pháp, câu lệnh](#cú-pháp-câu-lệnh)
-      - [PVC Example](#pvc-example)
-    - [Sử dụng vào dự án](#sử-dụng-vào-dự-án)
-  - [Triển khai mariadb](#triển-khai-mariadb)
-    - [StatefulSet](#statefulset)
-    - [Triển khai](#triển-khai)
-  - [Triển khai Redis (Helm)](#triển-khai-redis-helm)
+  - [4.1. Triển khai công cụ](#41-triển-khai-công-cụ)
+  - [4.2. StorageClass](#42-storageclass)
+    - [4.2.1. Ứng dụng](#421-ứng-dụng)
+    - [4.2.2. NFS](#422-nfs)
+    - [4.2.3. Cú pháp khai báo](#423-cú-pháp-khai-báo)
+  - [4.3. PV (Persistent Volume) và PVC (Persistent Volume Claim)](#43-pv-persistent-volume-và-pvc-persistent-volume-claim)
+    - [4.3.1. PV là gì?](#431-pv-là-gì)
+    - [4.3.2. PVC là gì?](#432-pvc-là-gì)
+    - [4.3.3. Những phần đặc biệt phải biết khi sử dụng PV và PVC](#433-những-phần-đặc-biệt-phải-biết-khi-sử-dụng-pv-và-pvc)
+    - [4.3.4. Cú pháp, câu lệnh](#434-cú-pháp-câu-lệnh)
+      - [4.3.4.1. PVC Example](#4341-pvc-example)
+    - [4.3.5. Sử dụng vào dự án](#435-sử-dụng-vào-dự-án)
+  - [4.4. Triển khai mariadb](#44-triển-khai-mariadb)
+    - [4.4.1. StatefulSet](#441-statefulset)
+    - [4.4.2. Triển khai](#442-triển-khai)
+  - [4.5. Triển khai Redis (Helm)](#45-triển-khai-redis-helm)
 - [5. Giám sát và quản trị Kubernetes](#5-giám-sát-và-quản-trị-kubernetes)
 
 # 1. Khởi đầu
@@ -1374,18 +1375,18 @@ Tránh việc container chiếm dụng quá nhiều tài nguyên, ảnh hưởng
     - Ví dụ: 256Mi = 256 mebibytes, 1Gi = 1 gibibyte.
     - Kubernetes dùng cgroup để giới hạn bộ nhớ.
 
-## HPA (autoscale)
+## 3.17. HPA (autoscale)
 - Làm sao dự án có khả năng chịu tải và tính ổn định của dự án cũng như làm thế nào để giúp dự án có thể tăng giảm tài nguyên khi mà lượng traffic biến động 
 - Scale là quá trình mở rộng hay thu nhỏ tài nguyên của hệ thống để đáp ứng được tốt hơn nhu cầu sử dụng khi lưu lượng hoặc khối lượng công việc tăng hoặc giảm 
 - Những tác nhân làm cho dự án bị chậm thường đến từ CPU, RAM, Network, Loadbance, ...
 - Có 2 loại chính (Vertial Scaling và Horizontal Scaling)
   - Tăng theo chiều dọc (Vertial Scaling): Tăng giảm CPU, memory 
   - Tăng Theo chiều ngang (Horizontal Scaling): Thêm số lượng intance, pod (HPA)
-### Horiontal Pod Autoscaler (HPA)
+### 3.17.1. Horiontal Pod Autoscaler (HPA)
 - Dựa theo 2 tài nguyên: CPU và memory 
 - Ví dụ ở pod dự án backend khi nào lượng truy cập vượt quá 80% của limit thì lúc đó sẽ tiến hành scale ra các pod khác và set giá trị min và max của pod 
 - Cần tinh chỉnh kỹ vì có khi sử dụng autoscale nó sẽ kiểm tra memory hoặc CPU nó sẽ tiến hành thêm các pod mới dễ bị tăng quá nhanh pod có thể bị over resource 
-### Metric Server 
+### 3.17.2. Metric Server 
 - Công cụ thu thập tài nguyên của pod để đánh giá được pod đang sử dụng (Metric Server) [Metric Server Git](https://github.com/kubernetes-sigs/metrics-server)
 
 - Cài đặt bằng helm trên k8s (master-1)
@@ -1437,8 +1438,8 @@ excuse vào pod sau đó cài đặt stress
     stress-ng --cpu 1
     stress
     ```
-## Sử dụng Rancher 
-## Sử dụng RBAC Rancher 
+## 3.18. Sử dụng Rancher 
+## 3.19. Sử dụng RBAC Rancher 
 - Role-based access control(RBAC): Để phân quyền được chính xác 
 - Trên Rancher:
   - Users and Authentication: Tạo user và thiết lập quyền cho user
@@ -1451,23 +1452,110 @@ excuse vào pod sau đó cài đặt stress
     - Custom: các role có sẵn ở template hoặc tạo thêm các quyền
 
 # 4. Xây dựng công cụ dự án 
-## Triển khai công cụ
+## 4.1. Triển khai công cụ
 - Các công cụ database
 - Với dự án nhỏ thì nên triển khai trực tiếp lên server 
-## StorageClass
+## 4.2. StorageClass
 - Để triển khai các công cụ như database, cache,... ta cần phải có một nơi để lưu trữ dữ liệu
 - Lưu trữ dự liệu trên k8s ntn? 
 - Seach `How to manage storage on k8s`
   - Có các keywork chính PV, PVC và StorageClasses
-  ![alt text](Images/storage-manager.png)
+  ![alt text](Ima- [1. Khởi đầu](#1-khởi-đầu)
+  - [1.1. Kubernetes là gì? (K8S) {c}](#11-kubernetes-là-gì-k8s-c)
+  - [1.2. Mô hình triển khai](#12-mô-hình-triển-khai)
+  - [1.3. Khi nào nên sử dụng k8s](#13-khi-nào-nên-sử-dụng-k8s)
+  - [1.4. Hạ tầng k8s](#14-hạ-tầng-k8s)
+    - [1.4.1. Kiến trúc k8s](#141-kiến-trúc-k8s)
+    - [1.4.2. Lấy ví dụ về mô hình](#142-lấy-ví-dụ-về-mô-hình)
+- [2. Cài đặt cụm k8s](#2-cài-đặt-cụm-k8s)
+  - [2.1. Phương pháp cài đặt](#21-phương-pháp-cài-đặt)
+    - [2.1.1. Cài đặt trên On-premise](#211-cài-đặt-trên-on-premise)
+    - [2.1.2. Cloud](#212-cloud)
+- [3. Triển khai dự án thực tế](#3-triển-khai-dự-án-thực-tế)
+  - [3.1. Quy trình kiến khai dự án k8s](#31-quy-trình-kiến-khai-dự-án-k8s)
+    - [3.1.1. Yaml trong k8s](#311-yaml-trong-k8s)
+    - [3.1.2. Namespace k8s](#312-namespace-k8s)
+  - [3.2. Tư duy triển khai dự á trên Kubernetes](#32-tư-duy-triển-khai-dự-á-trên-kubernetes)
+  - [3.3. Các công cụ quản lý k8s](#33-các-công-cụ-quản-lý-k8s)
+  - [3.4. Cài đặt Rancher và kết nối Kubernetes](#34-cài-đặt-rancher-và-kết-nối-kubernetes)
+    - [3.4.1. Rancher làm được gì?](#341-rancher-làm-được-gì)
+    - [3.4.2. Các cách cài đặt](#342-các-cách-cài-đặt)
+      - [3.4.2.1. Chạy bằng docker](#3421-chạy-bằng-docker)
+      - [3.4.2.2. Cài đặt trên Rancher trên Cloud (GCP)](#3422-cài-đặt-trên-rancher-trên-cloud-gcp)
+  - [3.5. Pod K8s](#35-pod-k8s)
+    - [3.5.1. Triển khai ví dụ một pod](#351-triển-khai-ví-dụ-một-pod)
+      - [3.5.1.1. Cấu hình chịu tải cho pod](#3511-cấu-hình-chịu-tải-cho-pod)
+  - [3.6. Deployment k8s](#36-deployment-k8s)
+    - [3.6.1. Ví dụ một file yaml Deployment đơn giản](#361-ví-dụ-một-file-yaml-deployment-đơn-giản)
+  - [3.7. Các câu lệnh Deployment K8s](#37-các-câu-lệnh-deployment-k8s)
+  - [3.8. Các chiến lược deployment k8s](#38-các-chiến-lược-deployment-k8s)
+    - [3.8.1. Rolling Update](#381-rolling-update)
+    - [3.8.2. Recreate](#382-recreate)
+  - [3.9. Services](#39-services)
+    - [3.9.1. NodePort](#391-nodeport)
+      - [3.9.1.1. On-premit](#3911-on-premit)
+      - [3.9.1.2. On Cloud](#3912-on-cloud)
+    - [3.9.2. ClusterIP](#392-clusterip)
+  - [3.10. Helm](#310-helm)
+    - [3.10.1. Mục đích của Helm](#3101-mục-đích-của-helm)
+    - [3.10.2. Cấu trúc của Helm Chart](#3102-cấu-trúc-của-helm-chart)
+    - [3.10.3. Một số lệnh Helm cơ bản](#3103-một-số-lệnh-helm-cơ-bản)
+    - [3.10.4. Helm Repo là gì?](#3104-helm-repo-là-gì)
+    - [3.10.5. Lợi ích của Helm](#3105-lợi-ích-của-helm)
+  - [3.11. Ingress](#311-ingress)
+    - [3.11.1. On-Premit](#3111-on-premit)
+      - [3.11.1.1. Thành phần chính của Ingress:](#31111-thành-phần-chính-của-ingress)
+      - [3.11.1.2. Cài đặt và cấu hình Nginx Ingress Controller](#31112-cài-đặt-và-cấu-hình-nginx-ingress-controller)
+      - [3.11.1.3. Triển khai loadbalancer](#31113-triển-khai-loadbalancer)
+    - [3.11.2. On Cloud](#3112-on-cloud)
+  - [3.12. Template yaml](#312-template-yaml)
+  - [3.13. Triển khai dự án Fullstack](#313-triển-khai-dự-án-fullstack)
+    - [3.13.1. Mô hình dự án](#3131-mô-hình-dự-án)
+      - [3.13.1.1. Frontend](#31311-frontend)
+      - [3.13.1.2. Backend](#31312-backend)
+  - [3.14. Configmaps](#314-configmaps)
+    - [3.14.1. Mục đích sử dụng ConfigMap](#3141-mục-đích-sử-dụng-configmap)
+    - [3.14.2. Cách tạo và sử dụng ConfigMap](#3142-cách-tạo-và-sử-dụng-configmap)
+    - [3.14.3. Lưu ý](#3143-lưu-ý)
+  - [3.15. Secret](#315-secret)
+    - [3.15.1. Các loại secret phổ biến](#3151-các-loại-secret-phổ-biến)
+    - [3.15.2. Cách sử dụng](#3152-cách-sử-dụng)
+  - [3.16. Request và limit](#316-request-và-limit)
+    - [3.16.1. Mục đích:](#3161-mục-đích)
+    - [3.16.2. Khác biệt](#3162-khác-biệt)
+    - [3.16.3. Các loại tài nguyên chính](#3163-các-loại-tài-nguyên-chính)
+  - [3.17. HPA (autoscale)](#317-hpa-autoscale)
+    - [3.17.1. Horiontal Pod Autoscaler (HPA)](#3171-horiontal-pod-autoscaler-hpa)
+    - [3.17.2. Metric Server](#3172-metric-server)
+  - [3.18. Sử dụng Rancher](#318-sử-dụng-rancher)
+  - [3.19. Sử dụng RBAC Rancher](#319-sử-dụng-rbac-rancher)
+- [4. Xây dựng công cụ dự án](#4-xây-dựng-công-cụ-dự-án)
+  - [4.1. Triển khai công cụ](#41-triển-khai-công-cụ)
+  - [4.2. StorageClass](#42-storageclass)
+    - [4.2.1. Ứng dụng](#421-ứng-dụng)
+    - [4.2.2. NFS](#422-nfs)
+    - [4.2.3. Cú pháp khai báo](#423-cú-pháp-khai-báo)
+  - [4.3. PV (Persistent Volume) và PVC (Persistent Volume Claim)](#43-pv-persistent-volume-và-pvc-persistent-volume-claim)
+    - [4.3.1. PV là gì?](#431-pv-là-gì)
+    - [4.3.2. PVC là gì?](#432-pvc-là-gì)
+    - [4.3.3. Những phần đặc biệt phải biết khi sử dụng PV và PVC](#433-những-phần-đặc-biệt-phải-biết-khi-sử-dụng-pv-và-pvc)
+    - [4.3.4. Cú pháp, câu lệnh](#434-cú-pháp-câu-lệnh)
+      - [4.3.4.1. PVC Example](#4341-pvc-example)
+    - [4.3.5. Sử dụng vào dự án](#435-sử-dụng-vào-dự-án)
+  - [4.4. Triển khai mariadb](#44-triển-khai-mariadb)
+    - [4.4.1. StatefulSet](#441-statefulset)
+    - [4.4.2. Triển khai](#442-triển-khai)
+  - [4.5. Triển khai Redis (Helm)](#45-triển-khai-redis-helm)
+- [5. Giám sát và quản trị Kubernetes](#5-giám-sát-và-quản-trị-kubernetes)
+ges/storage-manager.png)
 - Là 1 đối tượng giúp định nghĩa các loại lưu trữ khác nhau VD: "Tiệm bánh: giống như các loại kho hàng khác nhau ở trong tiệm bánh để lưu trữ bánh và các vật phẩm liên quan tùy vào tính chất của từng loại kho như `Kho lạnh: dùng để lưu trữ các loại bánh lạnh, bánh kem cần nhiệt độ thấp` hay `Kho khô: lưu trữ các loại bánh khô, bánh mì`"
 -  Storageclass là tài nguyên toàn cục (tài nguyên trong toàn bộ hệ thống trên cụm Kubernetes) nên không cần phải thêm namespace
-### Ứng dụng
+### 4.2.1. Ứng dụng
 - Muốn lưu trữ các ứng dụng có tốc độ đọc ghi nhanh sử dụng loại storage class ssh chẳng hạn, các ứng dụng lưu trữ lâu dài 0 cần nhanh thì sd hdd
 - Các loại phổ biến trên On-pre: NFS, CephFS
-### NFS 
+### 4.2.2. NFS 
 - VD trên server-database, ta cài NFS sau đó có chức năng chia sẽ 1 thư mục ra bên ngoài và trên k8s cài NFS client thì có thể truy cập được cái thư mục NFS server chia sẻ vì vậy mà ta có thể mount dữ liệu của db server lên 1 server riêng để lưu trữ dữ liệu và cũng lưu dưới dạng tập trung
-### Cú pháp khai báo
+### 4.2.3. Cú pháp khai báo
 ```
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -1481,15 +1569,15 @@ parameters:
 VolumeBindingMode: 
 - Immediate: tiến hành liên kết vào khi mà PVC được tạo 
 - WaitForFirstComumser: nó sẽ chờ có 1 consumer sử dụng đầu tiên thì mới được áp dụng chỉ được tạo khi có Pod sử dụng
-## PV (Persistent Volume) và PVC (Persistent Volume Claim)
-### PV là gì? 
+## 4.3. PV (Persistent Volume) và PVC (Persistent Volume Claim)
+### 4.3.1. PV là gì? 
 - Là 1 đối tượng cung cấp khả năng lưu trữ bền vững
 - Có thể lưu trữ các nguồn khác nhau như PVs, EVs... 
 - Ví dụ: "Tiệm bánh: `Là 1 phần cụ thể trong kho, như cái tủ chứa bánh mà tiệm sẵn sàng để lưu trữ, có tủ nhỏ tủ lớn tùy theo kích thước`". Còn trong k8s: `Là tài nguyên được khai báo 1 vùng chứa. Như khởi tạo 1 vùng chứa với 10GB bộ nhớ => dành ra 1 vùng nhớ riêng với 10GB bộ nhớ `
-### PVC là gì? 
+### 4.3.2. PVC là gì? 
 - Là 1 yêu cầu từ người dùng để sử dụng 1 lượng lưu trữ cụ thể, cho phép người dùng yêu cầu dung lượng lưu trữ và chế độ truy cập 
 - Ví dụ: "Tiệm bánh: `PVC như cách mà nhân sự yêu cầu Tôi muốn 1 cái tủ để tôi để 10 chiếc bánh cũng như nguyên liệu của chiếc bánh đó và có thể để vừa cái tủ đó `. Còn trong k8s: `PVC như 1 yêu cầu sd tài nguyên như là PV mà ta đã tạo, như tạo 1 PV với 10GB và 1 PVC là 5GB thì nó sẽ tìm cái PV nào phù hợp yêu cầu đó và sd`"
-### Những phần đặc biệt phải biết khi sử dụng PV và PVC 
+### 4.3.3. Những phần đặc biệt phải biết khi sử dụng PV và PVC 
 - Type of Persistent Volumes: Có rất là nhiều loại và mỗi loại sẽ có một yêu cầu khác nhau 
 
     ![alt text](Images/Type-of-PV.png)
@@ -1504,8 +1592,8 @@ VolumeBindingMode:
   - Recycle: Xóa đơn giảm (rm -rf /thevolume/*)
   - Delete: Khi không có yêu cầu nào cho PV thì nó sẽ xóa hết dữ liệu
 - Phase: Các giai đoạn
-### Cú pháp, câu lệnh
-#### PVC Example
+### 4.3.4. Cú pháp, câu lệnh
+#### 4.3.4.1. PVC Example
     ```
     apiVersion: v1
     kind: PersistentVolumeClaim
@@ -1530,7 +1618,7 @@ VolumeBindingMode:
         - name: app-data
             mountPath: /data
     ```
-### Sử dụng vào dự án 
+### 4.3.5. Sử dụng vào dự án 
 - Tạo 1 server hoặc sử dụng `database-server` tạo 1 disk riêng sau đó sử dụng nó để lưu trữ dữ liệu 
 - Cài đặt NFS server `sudo apt install nfs-server`
 - Sau đó muốn mount dữ liệu vào thư mục /data
@@ -1605,13 +1693,13 @@ VolumeBindingMode:
             claimName: nfs-pvc
     ```
 - **Tóm tắt lại quy trình: Đầu tiên cần tạo 1 storageClass để khai báo loại gì, tiếp đến tạo 1 server NFS để lưu trữ dữ liệu -> Sau đó tạo 1 PV để khai báo 1 vùng chứa trống và PVC để yêu cần nơi lưu trữ dữ liệu dựa trên các PV có sẵn và cuối cùng là mount thư mục bên trong pod trên k8s vào NFS-server**
-## Triển khai mariadb 
-### StatefulSet
+## 4.4. Triển khai mariadb 
+### 4.4.1. StatefulSet
 - Giúp quản lý trạng thái, tính ổn định cao như database
 - Tài nguyên được nhắc đến khi sd cùng với PV, được dùng để tạo database trên k8s
 - Là 1 API resource được sd để quản lý việc triển khai và mở rộng các ứng dụng có trạng thái và khác với deployment, phù hợp cho việc đảm bảo tính toàn vẹn của dữ liệu và duy trình tính ổn định của các pod 
 - Cũng khởi tạo các pod nhưng các pod sẽ khởi tạo lần lượt có tên và thứ tự 
-### Triển khai 
+### 4.4.2. Triển khai 
 - Triển khai 1 mariadb
     ```
     apiVersion: v1
@@ -1677,7 +1765,7 @@ VolumeBindingMode:
     ```
 - Kết nối `mysql -h 192.168.1.111 -P 31306 -u root -p`
 - Kết nối trực tiếp với nhau
-##  Triển khai Redis (Helm)
+##  4.5. Triển khai Redis (Helm)
 - Là công cụ hệ hống quản trị CSDL no SQL lưu trữ dưới dạng **key: value** cho phép truy cập cực nhanh và các dự án theo mô hình microservices 
 - Bài toán: Triển khai 1 redis đảm báo tính HA trên 1 namespace riêng sẽ thử kết nối từ dự án ecommerce đến cái redis đó ở bên trong môi trường cụm k8s và không kết nối ra bên ngoài
 - Truy cập vào `k8s-master-1`: **kubectl create ns architecture**
