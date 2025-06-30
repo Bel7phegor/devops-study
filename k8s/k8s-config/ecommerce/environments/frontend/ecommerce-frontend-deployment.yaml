@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecommerce-frontend-deployment
+  name: ecommerce-frontend-deployment
+  namespace: ecommerce
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: ecommerce-frontend-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ecommerce-frontend-deployment
+      namespace: ecommerce
+    spec:
+      containers:
+        - image: anphuc2370/ecommerce-frontend:v1
+          imagePullPolicy: Always
+          name: ecommerce-frontend
+          ports:
+            - containerPort: 80
+              name: tcp
+              protocol: TCP

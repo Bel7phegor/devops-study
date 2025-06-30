@@ -71,6 +71,20 @@ Mục lục
 - [4. Xây dựng công cụ dự án](#4-xây-dựng-công-cụ-dự-án)
   - [Triển khai công cụ](#triển-khai-công-cụ)
   - [StorageClass](#storageclass)
+    - [Ứng dụng](#ứng-dụng)
+    - [NFS](#nfs)
+    - [Cú pháp khai báo](#cú-pháp-khai-báo)
+  - [PV (Persistent Volume) và PVC (Persistent Volume Claim)](#pv-persistent-volume-và-pvc-persistent-volume-claim)
+    - [PV là gì?](#pv-là-gì)
+    - [PVC là gì?](#pvc-là-gì)
+    - [Những phần đặc biệt phải biết khi sử dụng PV và PVC](#những-phần-đặc-biệt-phải-biết-khi-sử-dụng-pv-và-pvc)
+    - [Cú pháp, câu lệnh](#cú-pháp-câu-lệnh)
+      - [PVC Example](#pvc-example)
+    - [Sử dụng vào dự án](#sử-dụng-vào-dự-án)
+  - [Triển khai mariadb](#triển-khai-mariadb)
+    - [StatefulSet](#statefulset)
+    - [Triển khai](#triển-khai)
+  - [Triển khai Redis (Helm)](#triển-khai-redis-helm)
 - [5. Giám sát và quản trị Kubernetes](#5-giám-sát-và-quản-trị-kubernetes)
 
 # 1. Khởi đầu
@@ -972,7 +986,7 @@ Khi chạy: `helm install myapp ./mychart`
 
     server {
         listen 80;
-
+        hostname anphuc-onpremit.tech.vn;
         location / {
             proxy_pass http://my_servers;
             proxy_redirect off;
@@ -982,7 +996,8 @@ Khi chạy: `helm install myapp ./mychart`
             proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
-    
+
+    sudo ln -s /etc/nginx/sites-available/anphuc.tech.vn.conf /etc/nginx/sites-enabled/
     nginx -t 
     systemctl restart nginx
     ```
@@ -991,21 +1006,26 @@ Khi chạy: `helm install myapp ./mychart`
     apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
-        name: car-serv-ingress
-        namespace: car-serv-ns
+      name: car-serv-ingress
+      namespace: car-serv-ns
     spec:
-        ingressClassName: nginx
-        rules:
-            - host: anphuc-onpremit.tech.vn
-            http:
-                paths:
-                - backend:
-                    service:
-                        name: car-serv-service
-                        port:
-                        number: 80
-                    path: /
-                    pathType: Prefix
+      defaultBackend:
+        service:
+          name: car-serv-service
+          port:
+            number: 80
+      ingressClassName: nginx
+      rules:
+        - host: anphuc-onpremit.tech.vn
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: car-serv-service
+                    port:
+                      number: 80
+                path: /
+                pathType: Prefix
     ```
 - Add host trên win 192.168.1.110 car-serv-onpre.devopsedu.vn
 ### 3.11.2. On Cloud
@@ -1107,17 +1127,18 @@ Triển khai phương án fullstack với backend có domain là api-ecommerce.n
     bind-add: 0.0.0.0
     systemctl restart mariadb
     ```
+    
 - Tải file dự án xuống 
     **Nếu muốn đổi lại domain thì hãy tìm kiếm trong thư mục của dự án tất cả các domain "devopsedu.vn" và thay thế thành domain mà mình muốn**
 - Sau đó tiến hành pull dự án đó lên dockerhub hoặc registry, đơn giản hơn là chuyển file dự án đó vào trong server để build sau khi chuyển dự án vào thư mục tmp thì giải nén và cài đặt docker
     ```
     Trên win: scp /file.zip ip@username:/tmp
-    Trên server linux:
+    Trên database-server linux:
         unzip file.zip 
         mkdir /projects
         cp /tmp/file.zip /projects
-        apt install unzip
-        apt install docker.io 
+        apt install unzip -y
+        apt install docker.io -y
     ```
 #### 3.13.1.1. Frontend
 - Di chuyển đến thư mục frontend và trong đó có chứa 1 Dockerfile build nó lên 
@@ -1147,14 +1168,14 @@ Triển khai phương án fullstack với backend có domain là api-ecommerce.n
 - Quay trở lại project 02-backend trong này có sẵn 1 docker file 
     ```
     docker build -t ecommerce-backend:v1
-    docker tag ecommerce-backend:v1 username/ecommerce-backend:v1
+    docker tag ecommerce-backend:v1 anphuc2370/ecommerce-backend:v1
     docker push username/ecommerce-backend:v1
     ```
 - Sau khi push lên dockerhub ta quay lại file yaml sửa chữa và thêm vào rancher
     ```
     Đổi deployment từ frontend thành backend
     Sửa container port là 8080
-    Sửa domain: api-encommerce.networks.vn
+    Sửa domain: api-encommerce.anphuc.vn
     Apply trên rancher ở namespace ecommerce 
     ```
 - Thành công
@@ -1199,7 +1220,7 @@ ConfigMap là một đối tượng API trong Kubernetes cho phép lưu trữ d�
 - Lưu lại và build lại file cấu hình và chừng sau sẽ chỉ cần cấu hình lại ở trên configmaps thôi không cần build lại dockerfile 
     ```
     docker images 
-    docker build -f username/ecommerce-backend:v2 .
+    docker build -t username/ecommerce-backend:v2 .
     docker push username/ecommerce-backend:v2
     ```
 - Quay lại rancher và tạo tài nguyên configmaps 
@@ -1252,7 +1273,7 @@ ConfigMap là một đối tượng API trong Kubernetes cho phép lưu trữ d�
 - Đầu tiên cần tạo 1 volume để có 1 vị trí lưu trữ dữ liệu của configmaps 
 - Tiếp theo trong container mình sẽ tạo ra 1 volume mount nó sẽ mount giá trị của volume mà mình vừa tạo vào bên trong container đó ở trong thư mục /run/src/main/resources/application.properties 
 - Vào deployment thử execute để kiểm tra xem thử có file đó chưa 
-- Khi cập nhật cấu hìn mới thì mình cần redeploy lại và update image lại lên v2
+- Khi cập nhật cấu hình mới thì mình cần redeploy lại và update image lại lên v2
 ### 3.14.3. Lưu ý 
 - Không sử dụng ConfigMap cho dữ liệu nhạy cảm: ConfigMap không được thiết kế để lưu trữ thông tin nhạy cảm như mật khẩu, khóa API. Đối với dữ liệu nhạy cảm, hãy sử dụng đối tượng Secret của Kubernetes.
 - Giới hạn kích thước: Dữ liệu trong ConfigMap không nên vượt quá 1 MiB. Nếu cần lưu trữ cấu hình lớn hơn, hãy xem xét sử dụng volume hoặc dịch vụ lưu trữ bên ngoài. 
@@ -1281,13 +1302,13 @@ ConfigMap là một đối tượng API trong Kubernetes cho phép lưu trữ d�
     kind: Secret
     metadata: 
         name: ecommerce-backend-database-connection
-        namespace:
+        namespace: ecommerce
     type: Opaque
     * Có 2 cách sử dụng ở đây 
     Cách 1: là nhập data và cái key phải được mã hóa trước với base64 
     Cách 2: là sử dụng stringData ghi giá trị chính xác, khi k8s sử lý sẽ chuyển sang dạng mã hóa 
     stringData:
-        MARIADN_HOST: "192.168.1.115"
+        MARIADB_HOST: "192.168.1.115"
         MARIADB_DB: "full-stack-ecommerce"
         MARIADB_PORT: '3306'
         MARIADB_USERNAME: "ecommerceapp"
@@ -1434,6 +1455,272 @@ excuse vào pod sau đó cài đặt stress
 - Các công cụ database
 - Với dự án nhỏ thì nên triển khai trực tiếp lên server 
 ## StorageClass
-- Lưu trữ dữ liệu
-- 
+- Để triển khai các công cụ như database, cache,... ta cần phải có một nơi để lưu trữ dữ liệu
+- Lưu trữ dự liệu trên k8s ntn? 
+- Seach `How to manage storage on k8s`
+  - Có các keywork chính PV, PVC và StorageClasses
+  ![alt text](Images/storage-manager.png)
+- Là 1 đối tượng giúp định nghĩa các loại lưu trữ khác nhau VD: "Tiệm bánh: giống như các loại kho hàng khác nhau ở trong tiệm bánh để lưu trữ bánh và các vật phẩm liên quan tùy vào tính chất của từng loại kho như `Kho lạnh: dùng để lưu trữ các loại bánh lạnh, bánh kem cần nhiệt độ thấp` hay `Kho khô: lưu trữ các loại bánh khô, bánh mì`"
+-  Storageclass là tài nguyên toàn cục (tài nguyên trong toàn bộ hệ thống trên cụm Kubernetes) nên không cần phải thêm namespace
+### Ứng dụng
+- Muốn lưu trữ các ứng dụng có tốc độ đọc ghi nhanh sử dụng loại storage class ssh chẳng hạn, các ứng dụng lưu trữ lâu dài 0 cần nhanh thì sd hdd
+- Các loại phổ biến trên On-pre: NFS, CephFS
+### NFS 
+- VD trên server-database, ta cài NFS sau đó có chức năng chia sẽ 1 thư mục ra bên ngoài và trên k8s cài NFS client thì có thể truy cập được cái thư mục NFS server chia sẻ vì vậy mà ta có thể mount dữ liệu của db server lên 1 server riêng để lưu trữ dữ liệu và cũng lưu dưới dạng tập trung
+### Cú pháp khai báo
+```
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-storage
+provisioner: kubernetes.io/no-provisioner (tùy vào môi trường khác nhau sẽ có giá trị khác)
+VolumeBindingMode: WaitForFirstComumser
+parameters:
+  type: pd-ssd
+```
+VolumeBindingMode: 
+- Immediate: tiến hành liên kết vào khi mà PVC được tạo 
+- WaitForFirstComumser: nó sẽ chờ có 1 consumer sử dụng đầu tiên thì mới được áp dụng chỉ được tạo khi có Pod sử dụng
+## PV (Persistent Volume) và PVC (Persistent Volume Claim)
+### PV là gì? 
+- Là 1 đối tượng cung cấp khả năng lưu trữ bền vững
+- Có thể lưu trữ các nguồn khác nhau như PVs, EVs... 
+- Ví dụ: "Tiệm bánh: `Là 1 phần cụ thể trong kho, như cái tủ chứa bánh mà tiệm sẵn sàng để lưu trữ, có tủ nhỏ tủ lớn tùy theo kích thước`". Còn trong k8s: `Là tài nguyên được khai báo 1 vùng chứa. Như khởi tạo 1 vùng chứa với 10GB bộ nhớ => dành ra 1 vùng nhớ riêng với 10GB bộ nhớ `
+### PVC là gì? 
+- Là 1 yêu cầu từ người dùng để sử dụng 1 lượng lưu trữ cụ thể, cho phép người dùng yêu cầu dung lượng lưu trữ và chế độ truy cập 
+- Ví dụ: "Tiệm bánh: `PVC như cách mà nhân sự yêu cầu Tôi muốn 1 cái tủ để tôi để 10 chiếc bánh cũng như nguyên liệu của chiếc bánh đó và có thể để vừa cái tủ đó `. Còn trong k8s: `PVC như 1 yêu cầu sd tài nguyên như là PV mà ta đã tạo, như tạo 1 PV với 10GB và 1 PVC là 5GB thì nó sẽ tìm cái PV nào phù hợp yêu cầu đó và sd`"
+### Những phần đặc biệt phải biết khi sử dụng PV và PVC 
+- Type of Persistent Volumes: Có rất là nhiều loại và mỗi loại sẽ có một yêu cầu khác nhau 
+
+    ![alt text](Images/Type-of-PV.png)
+- hostPath: lưu trữ trực tiếp trên server cài đặt k8s luôn nhưng khó đồng bộ vì nếu pod chuyển sang server khác tì sẽ không có dữ liệu -> SD để test
+- Access Modes: 
+    - ReadWriteOnce: QH 1:1 đang mount 1 pod vào 1 mount point và nếu scale lên 2 pod thì chắc chắn sẽ 0 được 
+    - ReadOnlyMany: Chỉ có quyền đọc
+    - ReadWriteMany: QH 1:N (1mount point có từ bên ngoài có thể được đọc từ nhiều pod trong cụm)
+    - ReadWriteOncePod: Chỉ có 1 pod duy nhất được đọc-ghi nó. Đảm bảo rằng trên toàn cụm chỉ có pod đó được phép đọc PVC hoặc ghi.
+- Reclaim Policy: Quyết định PV khi PVC bị xóa đi -> quyết định PV làm gì và chỉ có (nfs và hostPath thì mới hỗ trợ tính năng này)
+  - Retain(Giữ lại): Khi PVC không sd PV này nữa thì nó sẽ giữ lại dữ liệu
+  - Recycle: Xóa đơn giảm (rm -rf /thevolume/*)
+  - Delete: Khi không có yêu cầu nào cho PV thì nó sẽ xóa hết dữ liệu
+- Phase: Các giai đoạn
+### Cú pháp, câu lệnh
+#### PVC Example
+    ```
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+    name: app-storage
+    spec:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+        requests:
+        storage: 1Gi
+    ```
+- Pod using the PVC
+    ```
+    volumes:
+    - name: app-data
+        persistentVolumeClaim:
+        claimName: app-storage
+
+    containers:
+    - name: web
+        volumeMounts:
+        - name: app-data
+            mountPath: /data
+    ```
+### Sử dụng vào dự án 
+- Tạo 1 server hoặc sử dụng `database-server` tạo 1 disk riêng sau đó sử dụng nó để lưu trữ dữ liệu 
+- Cài đặt NFS server `sudo apt install nfs-server`
+- Sau đó muốn mount dữ liệu vào thư mục /data
+    ```
+    sudo -i
+    mkdir /data
+    chown -R nobody:nogroup  /data
+    chmod -R 777 /data
+    ```
+    `sudo vi /etc/exports` thêm 1 dòng `/data *(rw,syn,no_subtree_check)`: Mount thư mục /data với * tất cả các địa chỉ truy cập mode rqq syn
+    
+    ```
+    exportfs -rav
+    sudo systemctl restart nfs-kernal-server
+    ```
+- Và trên k8s muốn kết nối được thì `k8s-master-1` phải cài nfs-common thì mới kết nối được ***Cài trên tất cả các server**
+    ```
+    sudo -i
+    apt install nfs-common -y
+    ```
+- Sau đó quay lại rancer và triển khai PV và PVC
+    - PV
+    ```
+    apiVersion: v1
+    kind: PersistenVolume
+    metadata:
+        name: nfs-pv
+    spec:
+        capacity:
+            storage: 10Gi
+        accessModes:
+            - ReadWriteMany
+        nfs:
+            path: /data
+            server: 192.168.1.115
+        persistenVolumeReclaimPolicy: Retain
+        storageClassName: nfs-storage
+    ```
+    - PVC
+    ```
+    apiVersion: v1
+    kind: PersistenVolumeClaim
+    metadata:
+        name: nfs-pvc
+        namespace: ecommerce
+    spec:
+        accessModes:
+            - ReadWriteMany
+        resources:
+            requests:
+                storage: 5Gi
+        storageClassName: nfs-storage
+    ```
+    - Sau đó vào phần Recent Events để kiểm tra trạng thái -> message `waiting for first common,...` cần phải có 1 pod sử dụng
+    - Tạo 1 pod để kết nối dữ liệu: Pod nginx mount dữ liệu từ Pod vào thư mục /data của NFS server
+    ```
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nfs-nginx
+      namespace: ecommerce
+    spec:
+      containers:
+        - image: nginx
+          name: nginx
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html
+              name: nfs-storage
+      volumes:
+        - name: nfs-storage
+          persistentVolumeClaim:
+            claimName: nfs-pvc
+    ```
+- **Tóm tắt lại quy trình: Đầu tiên cần tạo 1 storageClass để khai báo loại gì, tiếp đến tạo 1 server NFS để lưu trữ dữ liệu -> Sau đó tạo 1 PV để khai báo 1 vùng chứa trống và PVC để yêu cần nơi lưu trữ dữ liệu dựa trên các PV có sẵn và cuối cùng là mount thư mục bên trong pod trên k8s vào NFS-server**
+## Triển khai mariadb 
+### StatefulSet
+- Giúp quản lý trạng thái, tính ổn định cao như database
+- Tài nguyên được nhắc đến khi sd cùng với PV, được dùng để tạo database trên k8s
+- Là 1 API resource được sd để quản lý việc triển khai và mở rộng các ứng dụng có trạng thái và khác với deployment, phù hợp cho việc đảm bảo tính toàn vẹn của dữ liệu và duy trình tính ổn định của các pod 
+- Cũng khởi tạo các pod nhưng các pod sẽ khởi tạo lần lượt có tên và thứ tự 
+### Triển khai 
+- Triển khai 1 mariadb
+    ```
+    apiVersion: v1
+    kind: StatefulSet
+    metadata:
+        name: mariadb
+        namespace: ecommerce
+    spec:
+        serviceName: mariadb-service
+        replicas: 1
+        selector: 
+            matchLabels:
+                app: mariadb
+        template:
+            metadata:
+                labels:
+                    app: mariadb
+            spec:
+                securityContext:
+                    fsGroup: 65534
+                containers:
+                    - name: mariadb
+                    image: mariadb-latest
+                    env:
+                        - name: MYSQL_ROOT_PASSWORD
+                        value: "devopseduvn"
+                    ports:
+                        - contianerPort: 3306
+                        name: mysql
+                    volumeMounts:
+                        - name: mariadb-storage
+                        mountPath: /var/lib/mysql
+                volumes:
+                    - name: mariadb-storage
+                    persistenVolumeClaim:
+                        claimName: nfs-pvc
+    ```
+    > securityContext:
+    >                fsGroup: 65534
+    `Đại diện cho UID là nobody`
+- Sau đó sửa lại file `vi /etc/exports` 
+    - Thêm tùy chọn `/data *(rw,sync,no_subtree_check,no_root_squash)` và áp dụng `sudo exportfs -rav`
+    ```
+    sudo exportfs -rav
+    sudo systemctl restart nfs-server
+    ```
+- Lưu trữ dữ liệu trong /data
+- Tạo NodePort để kết nối từ bên ngoài vào kiểm tra kết nối 
+    ```
+    apiVersion: v1
+    kind: Service
+    metadata:
+        name: mariadb-service
+        namespace: ecommerce
+    spec:
+        selector:
+            app: mariadb
+        type: NodePort
+        ports:
+            - port: 3306
+            targetPort: 3306
+            nodePort: 31306
+    ```
+- Kết nối `mysql -h 192.168.1.111 -P 31306 -u root -p`
+- Kết nối trực tiếp với nhau
+##  Triển khai Redis (Helm)
+- Là công cụ hệ hống quản trị CSDL no SQL lưu trữ dưới dạng **key: value** cho phép truy cập cực nhanh và các dự án theo mô hình microservices 
+- Bài toán: Triển khai 1 redis đảm báo tính HA trên 1 namespace riêng sẽ thử kết nối từ dự án ecommerce đến cái redis đó ở bên trong môi trường cụm k8s và không kết nối ra bên ngoài
+- Truy cập vào `k8s-master-1`: **kubectl create ns architecture**
+- Quay trở lại `database-server`
+    ```
+    ls /data
+    mkdir /data/redis
+    chown -R nobody:nogroup /data/
+    chmod -R 777 /data/
+    ```
+- Tạo PV và PVC
+    ```
+    apiVersion: v1
+    kind: PersistenVolume
+    metadata:
+        name: redis-pv
+    spec:
+        capacity:
+            storage: 10Gi
+        accessModes:
+            - ReadWriteMany
+        nfs:
+            path: /data/redis/
+            server: 192.168.1.115
+        persistenVolumeReclaimPolicy: Retain
+        storageClassName: nfs-storage
+    ---
+    apiVersion: v1
+    kind: PersistenVolumeClaim
+    metadata:
+        name: redis-pvc
+        namespace: architecture
+    spec:
+        accessModes:
+            - ReadWriteMany
+        resources:
+            requests:
+                storage: 10Gi
+        storageClassName: nfs-storage
+    ```
+- Quay lại `k8s-master-1` và bắt đầu cài đặt Redis bằng helm chart 
+    ```
+    mkdir redis
+    cd redis
+    ```
 # 5. Giám sát và quản trị Kubernetes 

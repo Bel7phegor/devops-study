@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecommerce-backend-deployment
+  name: ecommerce-backend-deployment
+  namespace: ecommerce
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: ecommerce-backend-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ecommerce-backend-deployment
+      namespace: ecommerce
+    spec:
+      containers:
+        - envFrom:
+            - secretRef:
+                name: ecommerce-backend-database-connection
+                optional: false
+          image: anphuc2370/ecommerce-backend:v2
+          imagePullPolicy: Always
+          name: ecommerce-backend
+          ports:
+            - containerPort: 8080
+              name: tcp
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /run/src/main/resource/application.properties
+              name: ecommerce-backend-application-properties-config-volume
+              subPath: application.properties
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: ecommerce-backend-application-properties-configmap
+          name: ecommerce-backend-application-properties-config-volume
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecommerce-backend-ingress
+  namespace: ecommerce
+spec:
+  defaultBackend:
+    service:
+      name: ecommerce-backend-service
+      port:
+        number: 8080
+  ingressClassName: nginx
+  rules:
+    - host: api-ecommerce.anphuc.vn
+      http:
+        paths:
+          - backend:
+              service:
+                name: ecommerce-backend-service
+                port:
+                  number: 8080
+            path: /
+            pathType: Prefix
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-backend-service
+  namespace: ecommerce
+spec:
+  ports:
+    - name: tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: ecommerce-backend-deployment
+  type: ClusterIP
+---
+apiVersion: v1
+data:
+  application.properties: |
+    spring.datasource.url=jdbc:mysql://$MARIADB_HOST:$MARIADB_PORT/$MARIADB_DB
+    spring.datasource.username=$MARIADB_USERNAME
+    spring.datasource.password=$MARIADB_PASSWORD
+    spring.datasource.driverClassName=com.mysql.cj.jdbc.Driver
+    spring.datasource.sql-script-encoding=UTF-8
+    spring.jpa.properties.hibernate.globally_quoted_i/dentifiers=true
+    spring.jpa.hibernate.ddl-auto=none
+    spring.jpa.show-sql=true
+    spring.jpa.properties.hibernate.format_sql=true
+
+    spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+    spring.data.rest.base-path=/api
+
+    allowed.origins=http://ecommerce.anphuc.vn
+
+    spring.data.rest.detection-strategy=ANNOTATED
+
+    okta.oauth2.client-id=0oab0lzwjoN1Rjsar5d7
+
+    okta.oauth2.issuer=https://dev-82108115.okta.com/oauth2/default
+kind: ConfigMap
+metadata:
+  name: ecommerce-backend-application-properties-configmap
+  namespace: ecommerce
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ecommerce-backend-database-connection
+  namespace: ecommerce
+type: Opaque
+stringData:
+    MARIADB_HOST: "192.168.1.115"
+    MARIADB_DB: "full-stack-ecommerce"
+    MARIADB_PORT: '3306'
+    MARIADB_USERNAME: "ecommerceapp"
+    MARIADB_PASSWORD: "StrongPa55WorD"

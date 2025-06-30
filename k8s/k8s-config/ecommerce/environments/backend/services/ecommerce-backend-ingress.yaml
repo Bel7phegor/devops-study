@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecommerce-backend-ingress
+  namespace: ecommerce
+spec:
+  defaultBackend:
+    service:
+      name: ecommerce-backend-service
+      port:
+        number: 8080
+  ingressClassName: nginx
+  rules:
+    - host: api-ecommerce.anphuc.vn
+      http:
+        paths:
+          - backend:
+              service:
+                name: ecommerce-backend-service
+                port:
+                  number: 8080
+            path: /
+            pathType: Prefix
