@@ -87,6 +87,20 @@
     - [4.4.2. Triển khai](#442-triển-khai)
   - [4.5. Triển khai Redis (Helm)](#45-triển-khai-redis-helm)
 - [5. Giám sát và quản trị Kubernetes](#5-giám-sát-và-quản-trị-kubernetes)
+  - [5.1. Daemonsets](#51-daemonsets)
+  - [5.2. Giám sát sử dụng prometheus](#52-giám-sát-sử-dụng-prometheus)
+    - [5.2.1. Mô hình PNG (prometheus node exporter grafana)](#521-mô-hình-png-prometheus-node-exporter-grafana)
+    - [5.2.2. Cài đặt (helm)](#522-cài-đặt-helm)
+  - [5.3. DashBoard Grafana](#53-dashboard-grafana)
+  - [5.4. Uptime kuma (helm)](#54-uptime-kuma-helm)
+    - [5.4.1. Cấu hình](#541-cấu-hình)
+    - [5.4.2. Truy cập và tùy chỉnh giao diện](#542-truy-cập-và-tùy-chỉnh-giao-diện)
+  - [5.5. Backup](#55-backup)
+    - [5.5.1. Backup những gì?](#551-backup-những-gì)
+    - [5.5.2. Backup and Restore](#552-backup-and-restore)
+      - [5.5.2.1. Velero](#5521-velero)
+      - [5.5.2.2. Cài đặt](#5522-cài-đặt)
+      - [5.5.2.3. Tiến hành backup từng phần](#5523-tiến-hành-backup-từng-phần)
 
 # 1. Khởi đầu
 ## 1.1. Kubernetes là gì? (K8S) {c}
@@ -1661,6 +1675,7 @@ VolumeBindingMode:
     ```
 - Lưu trữ dữ liệu trong /data
 - Tạo NodePort để kết nối từ bên ngoài vào kiểm tra kết nối 
+
     ```
     apiVersion: v1
     kind: Service
@@ -1720,8 +1735,248 @@ VolumeBindingMode:
         storageClassName: nfs-storage
     ```
 - Quay lại `k8s-master-1` và bắt đầu cài đặt Redis bằng helm chart 
+
     ```
     mkdir redis
     cd redis
     ```
 # 5. Giám sát và quản trị Kubernetes 
+- Triển khám sát node, pod, namespace, ... các tài nguyên trên cụm k8s, cảnh báo downtime của website
+- Giám sát ngoài cụm 
+## 5.1. Daemonsets
+- Tài nguyên quy chuẩn cho monitoring và loging
+- Được sử dụng để đảm bảo rằng mỗi pod sẽ chạy trên tất cả các node trong cluster khi sử dụng daemonsets thì k8s sẽ tự động tạo bản sao của pod đó trên mỗi node và khi có một node nào đó được thêm trong k8s thì daemonsets sẽ tự động tạo thêm pod với tài nguyên daemonsets trên node đó 
+- Chính vì daemonsets chạy pod trên tất cả các node nên sẽ có thể thu thập được các trạng thái của tài nguyên.
+- Tài nguyên có sẵn calico trên k8s cung cấp tính năng network policy cho k8s cho phép thiết lập các quy tắt bảo mật cho mạng ở trong cụm k8s để hạn chế lưu lượng truy cập giữa các pod, các namespace 
+- Lấy các daemonset: `kubectl get ds -A`
+- Taints and tolerations: Mặc định sẽ triển khai trên tất cả các worker nhưng mà có thể ngăn chặn daemonsets khởi tạo pod trên 1 node cụ thể nào đó để không cho phép giám sát cái node đó 
+## 5.2. Giám sát sử dụng prometheus 
+- APM (application performance management): Công cụ giám sát dự án đang chạy có hiệu suất như thế nào, các độ trễ cao hay thấp, phần trăm tỉ lệ lỗi
+### 5.2.1. Mô hình PNG (prometheus node exporter grafana)
+![alt text](Images/diagram-monitoring.png)
+- Giám sát thông qua các công cụ **Node exporter, SNMP exporter,..** sau đó prometheus sẽ tiến hành thu thập các dữ liệu về và được gọi mà metric -> Grafana
+### 5.2.2. Cài đặt (helm)
+- `Prometheus chart`
+1. Lưu dữ liệu ra bên ngoài để đảm bảo rằng nếu hệ thống monitoring có bị reset cũng không mất dữ liệu 
+2. Truy cập vào `database-server` 
+
+    ```
+    mkdir /data/monitoring
+    chown -R nobody:nogroup /data/
+    chmod -R 777 /data/
+    ```
+3. Quay lại rancher và tạo một project và namespace mới (monitoring) và tiến hành triển khai png stack trên đây
+4. Tạo 1 pv mới 
+    ``` 
+    apiVersion: v1
+    kind: PersistentVolume
+    metadata: 
+        name: monitoring-pv
+    spec:
+        capacity:
+            storage: 10Gi
+        accessMode: 
+            - ReadWriteOnce
+    nfs:
+        path: /data/monitoring
+        server: 192.168.1.115
+    persistentVolumeReClaimPolicy: Retain
+    storageClassName: nfs-storage
+    ```
+5. Sau đó vào git helm chart của prometheus để triển khai lên k8s-master-1
+    ```
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo update
+    helm upgrade --install anphucvn prometheus-community/kube-prometheus-stack 
+      --namespace monitoring 
+      --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.accessModes[0]=ReadWriteOnce 
+      --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=10Gi 
+      --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName=nfs-storage
+    ```
+6. Sau khi cấu hình thành công quay lại kiểm tra các trạng thái trên monitoring 
+![alt text](Images/status-workloads.png)
+    
+    ```
+    helm pull prometheus-community/kube-prometheus-stack
+    tar -xvf kube-prometheus-stack...
+    ```
+    vi values.yaml
+    ```
+    /ingress
+    enabled: true
+    ```
+7. Tạo nhanh ingress bằng cách Services-> Ingress 
+    
+    ```
+    host: grafana.anphuc.vn
+    Prefix: /
+    anphucvn-grafana
+    port: 80
+    IngressClass: nginx
+    ```
+    Add host trên win: `192.168.1.110 grafana.anphuc.vn`
+    Sau đó truy cập với username và mk ở Store-> Secret `anphuc-grafana`
+8. Làm tương tự với prometheus port 8080
+## 5.3. DashBoard Grafana
+- Dashboards quan trọng
+    - Khi làm việc trên k8s thực thi những câu lệnh, những thao tác mà nó bị chậm thì vào **API server** kiểm tra các rate, các loại SLI-request , dộ trễ
+    - Dự án bị chậm ví dụ `ecommerce` xác nhận xem dự án đó có bị chaamh hay không ta thường xem vào 2 phần tài nguyên `Namespace(workloads)`, `Pod`, `Cluster`(CPU, memory) và mạng (bandwitch) `Namespace(workloads)`
+- Khi bị request cao thì nên vào xem dashboard giám sát
+## 5.4. Uptime kuma (helm)
+- Theo dõi được khả năng uptime của 1 website 
+- Search: `http request status` để xem các trạng thái của website
+- blackbox uptume trong prometheus
+- Uptime-kuma helm chart
+### 5.4.1. Cấu hình 
+- Tạo PV và PVC để lưu trữ lại những trạng thái mà ta giám sát
+
+    - Trên `k8s-master-1`
+    ```
+    mkdir uptime
+    cd uptime 
+    ```
+    vi values.yaml
+    ``` 
+    volume:
+        enable: true
+        accessMode: ReadWriteOnce
+        existingClaim: "uptime-kuma-pvc"
+    ---
+    helm install anphucvn-uptime uptime-kuma/uptime-kuma -n monitoring -f values.yaml
+    ```
+- Sau đó tạo ingress để có thể truy cập được vào uptime
+    ```
+    Name: uptime-ingress
+    requestHost: uptime.anphuc.vn
+    Prefix: /
+    Target: anphucvn-uptime-uptime-kuma
+    Port: 3001
+    IngressClass: Nginx
+    ```
+- Add host trên win: **192.168.1.110 uptime.anphuc.vn**
+### 5.4.2. Truy cập và tùy chỉnh giao diện
+- Add new Monitor
+    ```
+    Friendly Name: ecommerce.anphuc.vn
+    url: ....
+    Retries: 3 (Kiểm tra lỗi quá số lần thì tiến hành cảnh báo )
+    Accepted Status Codes: 200-299
+    Setup Notification: ....
+    ```
+- Tích hợp công cụ lên grafana để tiến hành giám sát tập trung 
+  - Phải add host vào deployment `anphucvn-uptime-uptime-kuma` -> Networking -> Host Alias: ....
+  - Tạo API Keys và dùng cái key để xác thực, có thể **/metrics** để kiểm tra các trạng thái có thể thu thập được lên prometheus sau đó đưa vào giao diện grafana
+- Có nhiều phần nừa: 
+  - Hạ tần container, loging của dự án
+  - Làm sao để biết performent của dự án đang ở mức nào
+  - Lượng trafic vào ra 
+## 5.5. Backup
+### 5.5.1. Backup những gì?
+- **PV và PVC**: Sử dụng **NF Server** lưu trữ dữ liệu khác ngoài cụm, đảm bảo dữ liệu, và có thể chạy **crontab**(Backup tự động)
+- **Sử dụng 1 cluster và 2 replica** tạo bản backup ở server bên ngoài thường 5 bản
+- Backup các file yaml ra 1 nơi tập trung như git-ops, infastructor upcode giúp đảm bảo khi khởi tạo lại cũng như đồng bộ dự án hạ tầng sẽ đồng nhất và bảo đảm 
+- Các **Secrets** và **config-map**: như kms, pause 
+- Các manifest triển khai trên k8s
+- ECTD: lưu trữ toàn bộ trạng thái của cụm
+- Các Cluster lớn và phức tạp: backup cả cluster metadata hay infastructer config ..., các cơ sở hạ tầng, thông tin về network, firewall rules, ... Ensible, Cloud (Teraform)
+- Monitoring & logging: các tài nguyên dashboard, cấu hình metric,...
+### 5.5.2. Backup and Restore 
+- Backup k8s và công cụ: `K8S backup`
+- Velero: Công cụ backup ECTD: cả trạng thái của ectd, PV khôi phục và sao lưu theo lịch trình
+- ectdclt: Công cụ backuo được ectd chủ yếu sao lưu và khôi phục trạng thái của ectl không hộ trợ PV và PVC
+#### 5.5.2.1. Velero
+- Velero release: [GitHub](https://github.com/vmware-tanzu/velero/releases)
+
+    ![alt text](image.png)
+- Trên `k8s-master-1`
+    ```
+    wget https://github.com/vmware-tanzu/velero/releases/download/v1.16.1/velero-v1.16.1-linux-amd64.tar.gz
+    tar -xvf ...
+    sudo mv velero-version... /usr/local/bin
+    velero version
+    ```
+- Lưu bản backup ra đâu: `MinIO` kho lưu trữ và tạo các packet lưu trữ dữ liệu lên đó có thể thấy doanh nghiệp có bank, thuật toán, tự dựng ở on-premit
+- Sử dụng `database-server` để lưu dữ liệu hoặc mount ra ở 1 vụ trí khác bên ngoài
+#### 5.5.2.2. Cài đặt
+- Cài đặt sử dụng docker: trên `database-server`
+    ```
+    mkdir /minio
+    cd minio
+    ```
+    vi docker-compose.yml
+    ```
+    version: '3'
+    services:
+      minio:
+        image: minio/minio
+        container_name: minio
+        ports:
+          - "9000:9000"
+          - "9001:9001"
+        volumes:
+          - ./storage:/data
+        environment:
+          MINIO_ROOT_USER: anphuc
+          MINIO_ROOT_PASSWORD: Anphuc@1231
+        command: server --console-address ":9001" /data
+
+    ```
+- Chạy lệnh `docker-compose up -d` sử dụng port 9000 và 9001, `docker ps`
+- Truy cập `192.168.1.115:9001`
+- Create buket `k8s-anphucvn-cluster-backup`
+- Để lưu trữ thì cần qua API và xác thực qua `secret key và access key`
+- Quay lại `k8s-master-1` 
+
+    ![alt text](image-1.png)
+
+    ```
+    export MINIO_URL="192.168.1.115:9000"
+    export MINIO_ACCESS_KEY_ID="..."
+    export MINIO_ACCESS_KEY_ID="..."
+    export MINIO_BUCKET="k8s-anphucvn-cluster-backup"
+    ```
+- Chạy lệnh để cài đặt Velero với MinIO làm backend lưu trữ các bản sao lưu của Kubernetes (thực hiện trên server `k8s-master-1` hoặc kubectl shell Rancher)
+    ```
+    velero install 
+    --provider aws 
+    --bucket $MINIO_BUCKET 
+    --secret-file <(echo -e "[default]naws_access_key_id=$MINIO_ACCESS_KEY_IDnaws_secret_access_key=$MINIO_SECRET_KEY_ID") 
+    --use-node-agent 
+    --backup-location-config region=minio,s3ForcePathStyle="true",s3Url=$MINIO_URL 
+    --plugins velero/velero-plugin-for-aws:v1.5.0 
+    --namespace velero
+    ```
+- Kiểm tra trên rancher-server sẽ thấy được một namespace `velero` mà ta tạo ra 
+    - Vào namespace kiểm tra thì thấy các tài nguyên, workloads đã được tạo ra 
+    - Vào Storage -> Secrets: có 2 cái secret như các key mình tạo ra 
+    - Câu lệnh xem log: 
+#### 5.5.2.3. Tiến hành backup từng phần 
+1. Backup dự án ecommece 
+- Trên `k8s-master-1`: Backup toàn bộ dự án ecommerce luôn còn ta có thể tự tìm hiểu thêm ví dụ như backup chính xác cái deployment nào hay cái PV nào đó
+    ```
+    velero backup create ecommerce-v1 --include-namespaces=ecommerce
+    velero backup get (Xem backup)
+    ```
+- Quay lại web Velero thì thấy lượng tài nguyên đã được sử dụng
+
+    ![alt text](image-2.png)
+- Thử xóa đi dự án `ecommerce backend` delete deployment sau đó dựa theo backup ta tiến hành restore lại bằng lệnh: 
+    ```
+    velero restore create ecommerce-v1 --from-backup ecommerce-v1 --include-namespaces ecommerce
+    velero get restore
+    ```
+- Quay lại web rancher thì thấy dự án đã được backup lại và tương ứng thì trên web velero thì sẽ có một bản restore tương ứng
+- Và nếu muốn xóa backup thì ta dùng lệnh
+    ```
+    velero backup detete ecommerce-v1
+    ```
+- Thử backup toàn cụm
+    ```
+    velero backup create all-cluster-v1 --include-namespaces '*'
+    ```
+- Và khi tìm hiểu thêm thì hoàn hoàn có thể đặt lịch để nó có thể tự động backup và nó có thể backup hằng ngày 
+    ```
+    velero schedule create daily-cluster-backup --schedule="0 0 * * *" --include-namespaces '*'
+    velero schedule get
+    velero schedule delete daily-cluster-backup
+    ```
